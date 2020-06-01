@@ -52,6 +52,7 @@ class Rambouillet
     {
         $this->curl = new Curl();
         $this->curl->setOpt(CURLOPT_FOLLOWLOCATION, true);
+        $this->curl->setOpt(CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
         $this->curl->setHeader(
             'user-agent',
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36

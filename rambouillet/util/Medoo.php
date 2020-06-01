@@ -26,6 +26,7 @@ class Medoo
      * @param $data
      *
      * @return array
+     * @throws \Exception
      */
     public static function insertNotExists($table_name, $data)
     {
@@ -52,6 +53,7 @@ class Medoo
 
     /**
      * @return bool|\Medoo\Medoo
+     * @throws \Exception
      */
     public static function getInstance()
     {
@@ -83,6 +85,7 @@ class Medoo
      * @param $where
      *
      * @return bool
+     * @throws \Exception
      */
     public static function insertOrUpdateExist($table_name, $data, $where)
     {
@@ -110,6 +113,7 @@ class Medoo
      * @param $where
      *
      * @return bool
+     * @throws \Exception
      */
     public static function updateIfExists($table_name, $data, $where)
     {

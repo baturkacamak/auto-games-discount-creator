@@ -18,7 +18,6 @@ if (!class_exists('Rambouillet\Setup')) {
         public function __construct()
         {
             $this->createTables();
-            ;
         }
 
 

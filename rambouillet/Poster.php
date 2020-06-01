@@ -22,7 +22,6 @@ if (!class_exists('Rambouillet\Poster')) {
         /**
          * @var array
          */
-        private $game_data = [];
         private $tags;
 
 
@@ -48,56 +47,29 @@ if (!class_exists('Rambouillet\Poster')) {
             $this->postWordpress();
         }
 
-        public function getGameData($where = null)
-        {
-            $join = [
-                "[>]{$this->table_prices}" => ['ID' => 'game_id'],
-                "[>]{$this->table_price_meta}" => [
-                    'ID' => 'game_id',
-                    "{$this->table_prices}.ID" => 'price_id',
-                ],
-            ];
-
-            //        $where_default = [
-            //            "{$this->table_prices}.created_at[>=]" => $this->medoo::raw( 'CURDATE()' ),
-            //            "{$this->table_prices}.created_at[<]"  => $this->medoo::raw( 'CURDATE() + INTERVAL 1 DAY' ),
-            //        ];
-
-            $select = [
-                "{$this->table_prices}.ID(price_id)",
-                "{$this->table_games}.ID(game_id)",
-                "{$this->table_games}.name name",
-                "{$this->table_prices}.price price",
-                "{$this->table_prices}.cut cut",
-                "{$this->table_games}.thumbnail_url thumbnail_url",
-                "{$this->table_prices}.url url",
-            ];
-
-            $data = $this->medoo->select($this->table_games, $join, $select, $where);
-
-            return $data;
-        }
-
         public function postWordpress()
         {
-            $game_data = Medoo::getInstance()->select(
-                'games',
-                [
-                    '[>]prices' => ['ID' => 'game_id'],
-                    '[>]rambouillet_posts' => ['ID' => 'price_id'],
-                ],
-                [
-                    'games.name name',
-                    'games.url url',
-                    'prices.ID(price_id)',
-                    'prices.price price',
-                    'prices.cut cut',
-                ],
-                [
-                    'status_wordpress' => 0,
-                    'ORDER' => ['price' => 'DESC'],
-                ]
-            );
+            try {
+                $game_data = Medoo::getInstance()->select(
+                    'games',
+                    [
+                        '[>]prices' => ['ID' => 'game_id'],
+                        '[>]rambouillet_posts' => ['prices.ID' => 'price_id'],
+                    ],
+                    [
+                        'games.name name',
+                        'games.url url',
+                        'prices.ID(price_id)',
+                        'prices.price price',
+                        'prices.cut cut',
+                    ],
+                    [
+                        'status_wordpress' => 0,
+                        'ORDER' => ['price' => 'DESC'],
+                    ]
+                );
+            } catch (\Exception $e) {
+            }
             $post_title = sprintf(
                 "%d %s %d Steam İndirimleri",
                 date('d'),

@@ -86,7 +86,6 @@ if (!class_exists('Rambouillet\Scrape')) {
         {
             $queries = $this->plugin_settings->get_values('queries');
             $this->home_html = $this->getRemoteHomeHtml();
-
             foreach ($queries as $index => $query) {
                 $cached_data = get_transient($query['query_key']);
                 if (!$cached_data) {
@@ -293,12 +292,14 @@ if (!class_exists('Rambouillet\Scrape')) {
                                         ]
                                     );
 
-                                    \Rambouillet\Util\Medoo::insertNotExists(
-                                        'rambouillet_posts',
-                                        [
-                                            'price_id' => (int)$price['ID'],
-                                        ]
-                                    );
+                                    if (is_array($price)) {
+                                        \Rambouillet\Util\Medoo::insertNotExists(
+                                            'rambouillet_posts',
+                                            [
+                                                'price_id' => (int)$price['ID'],
+                                            ]
+                                        );
+                                    }
                                 }
                             }
                         }

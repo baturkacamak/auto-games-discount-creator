@@ -100,7 +100,7 @@ class PluginSettings extends \FW_Settings_Form
                 }
             }
         }
-        }
+    }
 
         /**
          * Check if settings menu was added in the action above
@@ -119,7 +119,7 @@ class PluginSettings extends \FW_Settings_Form
                 }
             }
         }
-        }
+    }
 
         if ($menu_exists) {
             return;
