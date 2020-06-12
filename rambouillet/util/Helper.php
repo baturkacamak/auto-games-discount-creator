@@ -68,5 +68,55 @@ if (! class_exists('Rambouillet\Util\Helper')) {
 
             return $z;
         }
+
+        public static function getRemoteImage($url)
+        {
+            $guzzle = new Client(
+                [
+                    'headers' => [
+                        'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36' .
+                            ' (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36',
+                    ],
+                ]
+            );
+
+            if ($url) {
+                $html = $guzzle->get($url)->getBody()->getContents();
+                if ($html) {
+                    $xpath = self::getXpath($html);
+                    $image = $xpath->query('//meta[@property="og:image"]');
+                    if ($image && $image->length) {
+                        return $image->item(0)->getAttribute('content') ? $image->item(0)->getAttribute(
+                            'content'
+                        ) : false;
+                    }
+                }
+            }
+            return false;
+        }
+
+        /**
+         * @param $data
+         *
+         * @return DOMXPath
+         */
+        public static function getXpath($data)
+        {
+            /* Use internal libxml errors -- turn on in production, off for debugging */
+            libxml_use_internal_errors(true);
+
+            $data = mb_convert_encoding($data, 'HTML-ENTITIES', 'UTF-8');
+            /* Createa a new DomDocument object */
+            $dom = new \DOMDocument();
+            /* Load the HTML */
+
+            $dom->loadHTML($data);
+            $dom->preserveWhiteSpace = false;
+
+            $dom->saveHTML();
+
+            /* Create a new XPath object */
+            return new DOMXPath($dom);
+        }
     }
 }
