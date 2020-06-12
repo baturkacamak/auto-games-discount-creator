@@ -2,8 +2,13 @@
 
 namespace Rambouillet;
 
+use Exception;
+use GuzzleHttp\Client;
+use GuzzleHttp\Cookie\CookieJar;
+use GuzzleHttp\Exception\GuzzleException;
 use Medoo\Medoo;
 use Rambouillet\Unyson\PluginSettings;
+use Rambouillet\Util\Helper;
 
 if (!class_exists('Rambouillet\Scrape')) {
     /**
@@ -18,15 +23,11 @@ if (!class_exists('Rambouillet\Scrape')) {
          */
         private static $statics = [
             'url' => [
-                'home' => 'http://isthereanydeal.com',
-                'lazy-deals' => 'https://isthereanydeal.com/ajax/data/lazy.deals.php',
+                'base' => 'https://isthereanydeal.com',
+                'lazy-deals' => 'ajax/data/lazy.deals.php',
             ],
         ];
 
-        /**
-         * @var \Curl\Curl
-         */
-        private $curl;
         /**
          * @var array
          */
@@ -55,25 +56,46 @@ if (!class_exists('Rambouillet\Scrape')) {
          * @var array|null
          */
         private $cookie;
+        /**
+         * @var Client
+         */
+        private $guzzle;
+        /**
+         * @var string
+         */
+        private $type;
 
         /**
          * Scrape constructor.
-         *
-         * @param \Curl\Curl $curl
-         * @param PluginSettings $plugin_settings
+         * @param string $type
+         * @throws GuzzleException
          */
-        public function __construct(\Curl\Curl $curl, PluginSettings $plugin_settings)
+        public function __construct($type = 'daily')
         {
-            $this->curl = $curl;
-            $this->plugin_settings = $plugin_settings;
-            $this->cookie = $this->plugin_settings->get_values('itad_cookie');
-            $this->actionInit();
+            $this->type = $type;
+
+            $jar = CookieJar::fromArray(['region' => 'tr', 'country' => 'TR%3ASpain'], 'isthereanydeal.com');
+
+            $this->guzzle = new Client(
+                [
+                    'base_uri' => self::$statics['url']['base'],
+                    'headers' => [
+                        'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36' .
+                            ' (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36',
+                    ],
+                    'cookies' => $jar
+                ]
+            );
+
+            $this->init();
         }
 
         /**
          *
+         * @throws Exception
+         * @throws GuzzleException
          */
-        public function actionInit()
+        public function init()
         {
             $this->saveRemoteHtml();
             $this->parseCacheHtml();
@@ -81,29 +103,36 @@ if (!class_exists('Rambouillet\Scrape')) {
 
         /**
          * @return void
+         * @throws GuzzleException
          */
         private function saveRemoteHtml()
         {
-            $queries = $this->plugin_settings->get_values('queries');
+            $queries = Rambouillet::getInstance()->pluginSettings->get_values('queries');
             $this->home_html = $this->getRemoteHomeHtml();
             foreach ($queries as $index => $query) {
-                $cached_data = get_transient($query['query_key']);
-                if (!$cached_data) {
-                    $html_game_list = $this->getRemoteGameList(
-                        fw_akg('query_value', $query, false)
-                    );
-                    if ($html_game_list) {
-                        set_transient($query['query_key'], $html_game_list, DAY_IN_SECONDS / 4);
+                if ($query['query_type'] === $this->type) {
+                    $cached_data = get_transient($query['query_key']);
+                    if (!$cached_data) {
+                        $html_game_list = $this->getRemoteGameList(
+                            fw_akg('query_value', $query, false)
+                        );
+                        if ($html_game_list) {
+                            $time = DAY_IN_SECONDS / 4;
+                            if ($query['query_type'] === 'hourly') {
+                                $time = HOUR_IN_SECONDS;
+                            }
+                            set_transient($query['query_key'], $html_game_list, $time);
+                            $this->cached[] = [
+                                'cache_type' => $query['query_key'],
+                                'cache' => $html_game_list,
+                            ];
+                        }
+                    } else {
                         $this->cached[] = [
                             'cache_type' => $query['query_key'],
-                            'cache' => $html_game_list,
+                            'cache' => $cached_data,
                         ];
                     }
-                } else {
-                    $this->cached[] = [
-                        'cache_type' => $query['query_key'],
-                        'cache' => $cached_data,
-                    ];
                 }
             }
         }
@@ -113,50 +142,45 @@ if (!class_exists('Rambouillet\Scrape')) {
          */
         private function getRemoteHomeHtml()
         {
-            $this->curl->setHeader(
-                'cookie',
-                $this->cookie
-            );
-            $this->curl->setCookie('region', 'tr');
-            $data = $this->curl->get(self::$statics['url']['home']);
-
-            return $data->response;
+            return $this->guzzle->request('GET')->getBody()->getContents();
         }
 
         /**
          * @param $query
          *
          * @return bool
+         * @throws \GuzzleHttp\Exception\GuzzleException
          */
         private function getRemoteGameList($query)
         {
-            $params = [
+            $form_params = [
                 'offset' => 0,
-                'limit' => 500,
-                'seen' => time() - 50,
-                'id' => $this->getLazyId(),
+                'limit' => 100,
+                'seen' => time() - 3000,
+                'id' => (int)$this->getLazyId(),
                 'timestamp' => time(),
-                'options' => '',
+                'options' => 'strict',
                 'by' => 'price:asc',
                 'filter' => $query,
             ];
 
-            $this->curl->setHeader(
-                'accept',
-                'application/json, text/javascript, */*; q=0.01'
-            );
-            $this->curl->setHeader('referer', 'https://isthereanydeal.com/');
-            $this->curl->setHeader('origin', 'https://isthereanydeal.com');
-            $post = $this->curl->post(
-                self::$statics['url']['lazy-deals'],
-                $params
-            );
-            $json = json_decode($post->response);
-            if ($json->status === 'success') {
-                return $json->data->html;
-            }
+            try {
+                $response = $this->guzzle->request(
+                    'POST',
+                    self::$statics['url']['lazy-deals'],
+                    ['form_params' => $form_params,]
+                );
 
-            return false;
+                if ($response->getStatusCode() === 200) {
+                    $json = json_decode($response->getBody()->getContents());
+                    if ($json && $json->status === 'success') {
+                        return $json->data->html;
+                    }
+                }
+                return false;
+            } catch (GuzzleException $e) {
+                throw $e;
+            }
         }
 
         /**
@@ -168,7 +192,7 @@ if (!class_exists('Rambouillet\Scrape')) {
                 $this->getRemoteHomeHtml();
             }
 
-            $xpath = $this->getXpath($this->home_html);
+            $xpath = Helper::getXpath($this->home_html);
             /* Query all <td> nodes containing specified class name */
             $nodes = $xpath->query("//script");
 
@@ -185,45 +209,21 @@ if (!class_exists('Rambouillet\Scrape')) {
             return $id;
         }
 
-        /**
-         * @param $data
-         *
-         * @return \DOMXPath
-         */
-        private function getXpath($data)
-        {
-            /* Use internal libxml errors -- turn on in production, off for debugging */
-            libxml_use_internal_errors(true);
-
-            $data = mb_convert_encoding($data, 'HTML-ENTITIES', 'UTF-8');
-            /* Createa a new DomDocument object */
-            $dom = new \DOMDocument();
-            /* Load the HTML */
-
-            $dom->loadHTML($data);
-            $dom->preserveWhiteSpace = false;
-
-            $dom->saveHTML();
-
-            /* Create a new XPath object */
-            $xpath = new \DOMXPath($dom);
-
-            return $xpath;
-        }
 
         /**
          * @param $cache
          *
          * @return array|bool
+         * @throws Exception
          */
         private function parseCacheHtml()
         {
             $data = [];
 
 
-            if ($this->cached) {
+            if ($this->cached && is_array($this->cached)) {
                 foreach ($this->cached as $index => $item) {
-                    $xpath = $this->getXpath($item['cache']);
+                    $xpath = Helper::getXpath($item['cache']);
 
                     $nodes = $xpath->query(
                         '//*[contains(@class, "game") and contains(@class, "seen")]'
@@ -231,19 +231,15 @@ if (!class_exists('Rambouillet\Scrape')) {
 
                     if (isset($nodes) && $nodes->length > 0) {
                         foreach ($nodes as $index_nodes => $node) {
-                            $name = '';
-                            $price = '';
-                            $cut = '';
-                            $url = '';
+                            $game = new \stdClass();
 
                             $nameXpath = $xpath->query('//*[@class="noticeable"]', $node);
 
                             if ($nameXpath->item($index_nodes)) {
-                                $name = $nameXpath->item($index_nodes)->nodeValue;
+                                $game->name = $nameXpath->item($index_nodes)->nodeValue;
 
                                 $priceXpath = $xpath->query(
-                                    'descendant::*[contains(@class, "shopMark") and contains(@class, "s-low")' .
-                                    ' and contains(@class, "steam")]',
+                                    'descendant::*[contains(@class, "shopMark") and contains(@class, "g-low")]',
                                     $node
                                 );
 
@@ -251,7 +247,7 @@ if (!class_exists('Rambouillet\Scrape')) {
                                     return false;
                                 }
 
-                                $price = floatval(
+                                $game->price = floatval(
                                     preg_replace(
                                         '/[^-0-9\.]/',
                                         '.',
@@ -259,48 +255,47 @@ if (!class_exists('Rambouillet\Scrape')) {
                                     )
                                 );
 
-                                $url = untrailingslashit(
+                                $game->url = untrailingslashit(
                                     $priceXpath->item(0)->getAttribute('href')
                                 );
 
                                 $cutXpath = $xpath->query(
-                                    'descendant::*[contains(@class, "details")]/a[contains(@class,' .
-                                    ' "steam")]//*[contains(@class, "cut")]',
+                                    'descendant::*[contains(@class, "details")]/a//*[contains(@class, "cut")]',
                                     $node
                                 );
 
-                                $cut = $this->getNodeValue($cutXpath);
+                                $game->cut = $this->getNodeValue($cutXpath);
 
                                 if (
-                                    isset($name) && !empty($name) && !empty($cut)
-                                    && !empty($price) && !empty($url)
+                                    isset($game->name) && !empty($game->name) && !empty($game->cut) && !empty($game->url)
                                 ) {
-                                    $game = \Rambouillet\Util\Medoo::insertNotExists(
+                                    $gameMedoo = \Rambouillet\Util\Medoo::insertNotExists(
                                         'games',
                                         [
-                                            'name' => $name,
-                                            'url' => $url,
+                                            'name' => $game->name,
+                                            'url' => $game->url,
                                         ]
                                     );
 
-                                    $price = \Rambouillet\Util\Medoo::insertNotExists(
+                                    $priceMedoo = \Rambouillet\Util\Medoo::insertNotExists(
                                         'prices',
                                         [
-                                            'game_id' => (int)$game['ID'],
-                                            'price' => (double)$price,
-                                            'cut' => (int)$cut,
+                                            'game_id' => (int)$gameMedoo['ID'],
+                                            'price' => (double)$game->price,
+                                            'cut' => (int)$game->cut,
                                         ]
                                     );
 
-                                    if (is_array($price)) {
+                                    if (is_array($priceMedoo)) {
                                         \Rambouillet\Util\Medoo::insertNotExists(
                                             'rambouillet_posts',
                                             [
-                                                'price_id' => (int)$price['ID'],
+                                                'price_id' => (int)$priceMedoo['ID'],
                                             ]
                                         );
                                     }
                                 }
+                                unset($game);
                             }
                         }
                     }

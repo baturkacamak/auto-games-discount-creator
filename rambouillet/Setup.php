@@ -2,6 +2,7 @@
 
 namespace Rambouillet;
 
+use Exception;
 use Rambouillet\Util\Medoo;
 
 if (!class_exists('Rambouillet\Setup')) {
@@ -13,18 +14,37 @@ if (!class_exists('Rambouillet\Setup')) {
     class Setup
     {
         /**
-         * Setup constructor.
+         * The one true instance.
          */
-        public function __construct()
+        private static $instance;
+
+        /**
+         * Constructor.
+         */
+        protected function __construct()
         {
-            $this->createTables();
+            return self::$instance = $this;
         }
 
+        /**
+         * Get singleton instance.
+         *
+         * @since 1.5
+         */
+        public static function getInstance()
+        {
+            if (!isset(self::$instance)) {
+                self::$instance = new self();
+            }
+
+            return self::$instance;
+        }
 
         /**
          *
+         * @throws Exception
          */
-        private function createTables()
+        public static function init()
         {
             global $wpdb;
 

@@ -14,50 +14,30 @@ if (!class_exists('Rambouillet\Schedule')) {
     class Schedule
     {
         /**
-         * @var Curl
-         */
-        private $curl;
-        /**
-         * @var PluginSettings
-         */
-        private $pluginSettings;
-
-        /**
          * Schedule constructor.
          *
-         * @param Curl $curl
-         * @param PluginSettings $pluginSettings
          */
-        public function __construct(Curl $curl, PluginSettings $pluginSettings)
+        public function __construct()
         {
-            $this->curl = $curl;
-            $this->pluginSettings = $pluginSettings;
-
             $this->initSchedules();
         }
 
         /**
          *
          */
-        public function startPosting()
+        public static function startDailyPost()
         {
-            new Scrape($this->curl, $this->pluginSettings);
-            new Poster($this->curl, $this->pluginSettings);
+            new Scrape();
+            new Poster('daily');
         }
 
         /**
-         * @param $schedules
          *
-         * @return mixed
          */
-        public function addSchedule($schedules)
+        public static function startHourlyPost()
         {
-            $schedules['everySixHours'] = [
-                'interval' => 21600, // Every 6 hours
-                'display' => __('Every 6 hours', 'rambouillet'),
-            ];
-
-            return $schedules;
+            new Scrape('hourly');
+            new Poster('hourly');
         }
 
         /**
@@ -65,11 +45,12 @@ if (!class_exists('Rambouillet\Schedule')) {
          */
         public function initSchedules()
         {
-            add_filter('cron_schedules', [$this, 'addSchedule']);
-            add_action('startScrapingAction', [$this, 'startScraping']);
-            add_action('startPostingAction', [$this, 'startPosting']);
-            if (!wp_next_scheduled('startPostingAction')) {
-                wp_schedule_event(strtotime('06:00:00'), 'daily', 'startPostingAction');
+            if (!wp_next_scheduled('startScheduleDailyPost')) {
+                wp_schedule_event(strtotime('06:00:00'), 'daily', 'startScheduleDailyPost');
+            }
+
+            if (!wp_next_scheduled('startScheduleHourlyPost')) {
+                wp_schedule_event(time(), 'hourly', 'startScheduleHourlyPost');
             }
         }
     }
