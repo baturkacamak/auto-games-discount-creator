@@ -3,99 +3,100 @@
 namespace Rambouillet;
 
 use Curl\Curl;
+use GuzzleHttp\Client;
 use Rambouillet\Unyson\PluginSettings;
 use Rambouillet\Util\Medoo;
 
-/**
- * Class Rambouillet
- *
- * @package Rambouillet
- */
-class Rambouillet
-{
-
+if (!class_exists('Rambouillet\Rambouillet')) {
     /**
-     * The one true instance.
-     */
-    private static $instance;
-    /**
-     * @var Curl
-     */
-    private $curl;
-
-    /**
-     * Constructor.
-     */
-    protected function __construct()
-    {
-        return self::$instance = $this;
-    }
-
-    /**
-     * Get singleton instance.
+     * Class Rambouillet
      *
-     * @since 1.5
+     * @package Rambouillet
      */
-    public static function getInstance()
+    class Rambouillet
     {
-        if (!isset(self::$instance)) {
-            self::$instance = new self();
+
+        /**
+         * The one true instance.
+         */
+        private static $instance;
+        /**
+         * @var Client
+         */
+        public $guzzle;
+        /**
+         * @var PluginSettings
+         */
+        public $pluginSettings;
+
+        /**
+         * Constructor.
+         */
+        protected function __construct()
+        {
+            return self::$instance = $this;
         }
 
-        return self::$instance;
-    }
+        /**
+         * Get singleton instance.
+         *
+         * @since 1.5
+         */
+        public static function getInstance()
+        {
+            if (!isset(self::$instance)) {
+                self::$instance = new self();
+            }
 
-    /**
-     *
-     */
-    public function init()
-    {
-        $this->curl = new Curl();
-        $this->curl->setOpt(CURLOPT_FOLLOWLOCATION, true);
-        $this->curl->setOpt(CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
-        $this->curl->setHeader(
-            'user-agent',
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36
-             (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36'
-        );
-        if (!function_exists('is_plugin_active')) {
-            include_once ABSPATH . '/wp-admin/includes/plugin.php';
+            return self::$instance;
         }
 
+        /**
+         *
+         */
+        public function init()
+        {
+            if (!function_exists('is_plugin_active')) {
+                include_once ABSPATH . '/wp-admin/includes/plugin.php';
+            }
 
-        $this->actions();
-    }
-
-    /**
-     *
-     */
-    private function actions()
-    {
-        register_activation_hook(RAMBUILLET_FILE, [$this, 'actionActivateRambouillet']);
-        if (is_plugin_active(RAMBUILLET_FILE)) {
-            add_action('init', [$this, 'actionInit']);
+            $this->actions();
         }
-    }
 
-    /**
-     *
-     */
-    public function actionInit()
-    {
-        new Requirement();
+        /**
+         *
+         */
+        private function actions()
+        {
+            if (is_plugin_active(RAMBUILLET_FILE)) {
+                add_action('init', [$this, 'actionInit']);
 
-        if (defined('FW')) {
-            $pluginSettings = new PluginSettings('rambouillet');
-
-            new Schedule($this->curl, $pluginSettings);
+                // schedule actions
+                add_action('startScheduleDailyPost', ['Rambouillet\Schedule', 'startDailyPost']);
+                add_action('startScheduleHourlyPost', ['Rambouillet\Schedule', 'startHourlyPost']);
+            } else {
+                register_activation_hook(RAMBUILLET_FILE, ['Setup', 'init']);
+            }
         }
-    }
 
-    /**
-     *
-     */
-    public function actionActivateRambouillet()
-    {
-        new Setup();
+        /**
+         *
+         */
+        public function actionInit()
+        {
+
+            if (defined('DOING_AJAX') && DOING_AJAX) {
+                return false;
+            }
+
+            new Requirement();
+
+            if (defined('FW')) {
+
+                $this->pluginSettings = new PluginSettings('rambouillet');
+
+                new Schedule();
+            }
+        }
     }
 }
