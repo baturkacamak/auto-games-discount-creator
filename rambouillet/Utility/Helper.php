@@ -1,6 +1,6 @@
 <?php
 
-namespace Rambouillet\Util;
+namespace Rambouillet\Utility;
 
 use DOMXPath;
 use GuzzleHttp\Client;
@@ -9,21 +9,42 @@ if (!class_exists('Rambouillet\Util\Helper')) {
     /**
      * Class Helper
      *
-     * @package Rambouillet\Util
+     * @package Rambouillet\Utility
      */
     class Helper
     {
 
         /**
-         * @param $f
-         * @param string $zt
+         * @param string $strTime
+         * @param $dateFormat
          *
          * @return false|string|string[]
          */
-        public static function getTurkishDate($f, $zt = 'now')
+        public static function getTurkishDateName($strTime = 'now', $dateFormat = 'F')
         {
-            $z = date("$f", strtotime($zt));
-            $donustur = [
+            setlocale(LC_TIME, 'tr_TR.UTF-8');
+
+            switch ($dateFormat) :
+                case 'F':
+                    $intDateFormat = '%B';
+                    break;
+                case 'D':
+                    $intDateFormat = '%a';
+                    break;
+                case 'l':
+                    $intDateFormat = '%A';
+                    break;
+                case 'M':
+                    $intDateFormat = '%b';
+                    break;
+                default:
+                    $intDateFormat = false;
+                    break;
+            endswitch;
+
+            $date_name = strftime($intDateFormat, strtotime($strTime));
+
+            $date_names = [
                 'Monday' => 'Pazartesi',
                 'Tuesday' => 'Salı',
                 'Wednesday' => 'Çarşamba',
@@ -62,26 +83,36 @@ if (!class_exists('Rambouillet\Util\Helper')) {
                 'Nov' => 'Kas',
                 'Dec' => 'Ara',
             ];
-            foreach ($donustur as $en => $tr) {
-                $z = str_replace($en, $tr, $z);
-            }
-            if (strpos($z, 'Mayıs') !== false && strpos($f, 'F') === false) {
-                $z = str_replace('Mayıs', 'May', $z);
+
+            if (array_search($date_name, $date_names)) {
+                return $date_name;
+            } else {
+                $date_name = date($dateFormat, strtotime($strTime));
+
+                foreach ($date_names as $english_day_name => $turkish_day_name) {
+                    $date_name = str_replace($english_day_name, $turkish_day_name, $date_name);
+                }
+                if (false !== strpos($date_name, 'Mayıs') && false === strpos($dateFormat, 'F')) {
+                    $date_name = str_replace('Mayıs', 'May', $date_name);
+                }
             }
 
-            return $z;
+
+            return $date_name;
         }
 
-        public static function getRemoteImage($url)
+        public static function getRemoteImage($url, $guzzle = false)
         {
-            $guzzle = new Client(
-                [
-                    'headers' => [
-                        'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36' .
-                            ' (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36',
-                    ],
-                ]
-            );
+            if (!$guzzle) {
+                $guzzle = new Client(
+                    [
+                        'headers' => [
+                            'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36' .
+                                ' (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36',
+                        ],
+                    ]
+                );
+            }
 
             if ($url) {
                 $html = $guzzle->get($url)->getBody()->getContents();
@@ -108,18 +139,18 @@ if (!class_exists('Rambouillet\Util\Helper')) {
             /* Use internal libxml errors -- turn on in production, off for debugging */
             libxml_use_internal_errors(true);
 
-            $data = mb_convert_encoding($data, 'HTML-ENTITIES', 'UTF-8');
+            $converted_data = mb_convert_encoding($data, 'HTML-ENTITIES', 'UTF-8');
             /* Createa a new DomDocument object */
-            $dom = new \DOMDocument();
+            $dom_document = new \DOMDocument();
             /* Load the HTML */
 
-            $dom->loadHTML($data);
-            $dom->preserveWhiteSpace = false;
+            $dom_document->loadHTML($converted_data);
+            $dom_document->preserveWhiteSpace = false;
 
-            $dom->saveHTML();
+            $dom_document->saveHTML();
 
             /* Create a new XPath object */
-            return new DOMXPath($dom);
+            return new DOMXPath($dom_document);
         }
     }
 }
