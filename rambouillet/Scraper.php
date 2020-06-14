@@ -20,16 +20,6 @@ if (!class_exists('Rambouillet\Scraper')) {
         /**
          * @var array
          */
-        private static $statics = [
-            'url' => [
-                'base' => 'https://isthereanydeal.com',
-                'lazy-deals' => 'ajax/data/lazy.deals.php',
-            ],
-        ];
-
-        /**
-         * @var array
-         */
         private $data = [];
         /**
          * @var array
@@ -59,13 +49,18 @@ if (!class_exists('Rambouillet\Scraper')) {
          */
         public function __construct($type = 'daily')
         {
+            $base_url = Rambouillet::getInstance()->pluginSettings->get_values('base_url', []);
+
             $this->type = $type;
 
-            $cookie_jar = CookieJar::fromArray(['region' => 'tr', 'country' => 'TR%3ASpain'], 'isthereanydeal.com');
+            $cookie_jar = CookieJar::fromArray(
+                ['region' => 'tr', 'country' => 'TR%3ASpain'],
+                parse_url($base_url)['host']
+            );
 
             $this->guzzle = new Client(
                 [
-                    'base_uri' => self::$statics['url']['base'],
+                    'base_uri' => $base_url,
                     'headers' => [
                         'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36' .
                             ' (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36',
@@ -127,7 +122,7 @@ if (!class_exists('Rambouillet\Scraper')) {
          * @return bool
          * @throws \GuzzleHttp\Exception\GuzzleException
          */
-        private function getQueryResult($query)
+        protected function getQueryResult($query)
         {
             $form_params = [
                 'offset' => 0,
@@ -143,7 +138,7 @@ if (!class_exists('Rambouillet\Scraper')) {
             try {
                 $response = $this->guzzle->request(
                     'POST',
-                    self::$statics['url']['lazy-deals'],
+                    Rambouillet::getInstance()->pluginSettings->get_values('lazy_deals'),
                     ['form_params' => $form_params,]
                 );
 
@@ -163,7 +158,7 @@ if (!class_exists('Rambouillet\Scraper')) {
          * @return string
          * @throws GuzzleException
          */
-        private function getRemoteLazyId()
+        protected function getRemoteLazyId()
         {
             if (!$this->homeHtml) {
                 $this->getHomeHtml();

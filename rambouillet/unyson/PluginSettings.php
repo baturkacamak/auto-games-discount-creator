@@ -22,6 +22,8 @@ if (!class_exists('Rambouillet\Unyson\PluginSettings')) {
                     'type' => 'box',
                     'title' => esc_html__('Rambouillet Plugin Settings', 'mariselle'),
                     'options' => [
+                        'base_url' => ['type' => 'text'],
+                        'lazy_deals' => ['type' => 'text'],
                         'queries' => [
                             'type' => 'addable-box',
                             'template' => '{{- query_key }}', // box title
@@ -65,14 +67,15 @@ if (!class_exists('Rambouillet\Unyson\PluginSettings')) {
         /**
          * @param null $key
          *
+         * @param array|mixed $default_value
          * @return array|mixed|null
          */
-        public function get_values($key = null)
+        public function get_values($key = null, $default_value = [])
         {
             return \FW_WP_Option::get(
                 'rambouillet:rambouillet',
                 $key,
-                []
+                $default_value
             );
         }
 
@@ -110,7 +113,7 @@ if (!class_exists('Rambouillet\Unyson\PluginSettings')) {
                     }
                 }
             }
-        }
+            }
 
             /**
              * Check if settings menu was added in the action above
@@ -129,7 +132,7 @@ if (!class_exists('Rambouillet\Unyson\PluginSettings')) {
                     }
                 }
             }
-        }
+            }
 
             if ($menu_exists) {
                 return;

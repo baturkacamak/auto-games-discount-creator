@@ -2,9 +2,7 @@
 
 namespace Rambouillet;
 
-use Curl\Curl;
 use Exception;
-use Rambouillet\Unyson\PluginSettings;
 use Rambouillet\Utility\Helper;
 use Rambouillet\Utility\Medoo;
 
