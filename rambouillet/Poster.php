@@ -56,7 +56,7 @@ if (!class_exists('Rambouillet\Poster')) {
                 ]
             ];
 
-            if ($type === 'daily') {
+            if ('daily' === $type) {
                 $this->postDaily();
             } else {
                 $this->postFreeGames();
