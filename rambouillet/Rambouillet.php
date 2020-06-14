@@ -92,7 +92,6 @@ if (!class_exists('Rambouillet\Rambouillet')) {
             new Requirement();
 
             if (defined('FW')) {
-
                 $this->pluginSettings = new PluginSettings('rambouillet');
 
                 new Schedule();

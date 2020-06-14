@@ -1,6 +1,6 @@
 <?php
 
-namespace Rambouillet\Util;
+namespace Rambouillet\Utility;
 
 /**
  * Class Medoo

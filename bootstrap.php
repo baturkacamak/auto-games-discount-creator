@@ -9,6 +9,7 @@
 */
 
 use Rambouillet\Rambouillet;
+
 require_once __DIR__ . '/vendor/autoload.php';
 defined('RAMBUILLET_FILE') or define(
     'RAMBUILLET_FILE',
