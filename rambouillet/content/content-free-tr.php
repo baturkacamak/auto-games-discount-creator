@@ -7,41 +7,41 @@
  * Time: 10:34
  */
 
-use Rambouillet\Util\Helper;
+use Rambouillet\Utility\Helper;
 
 ?>
-<?php if (isset($free_game_data) && count($free_game_data) > 0) : ?>
+<?php if (isset($data) && count($data) > 0) : ?>
     <div class="steam-content-body">
-        <?php echo "Ucretsiz oyun {$free_game_data['name']}"; ?>
+        <?php echo "Ucretsiz oyun {$data['name']}"; ?>
     </div>
     <div class="steam-cards">
         <div class="ui cards free-game">
             <div class="ui card">
                 <div class="image">
-                    <a href="<?php echo $free_game_data['url']; ?>"
+                    <a href="<?php echo $data['url']; ?>"
                        target="_blank"
                     >
-                        <img src="<?php echo Helper::getRemoteImage($free_game_data['url']); ?>"
-                             alt="<?php echo $free_game_data['name']; ?>" width="100%">
+                        <img src="<?php echo Helper::getRemoteImage($data['url']); ?>"
+                             alt="<?php echo $data['name']; ?>" width="100%">
                     </a>
                 </div>
                 <div class="content">
                     <a class="header"
-                       href="<?php echo $free_game_data['url']; ?>"
+                       href="<?php echo $data['url']; ?>"
                        target="_blank"
-                    ><?php echo $free_game_data['name']; ?></a>
+                    ><?php echo $data['name']; ?></a>
                     <div class="description">
                         <div>Fiyatı:
-                            <strong><?php echo 'ÜCRETSİZ'; ?></strong>
+                            <strong><?php esc_html_e('ÜCRETSİZ'); ?></strong>
                         </div>
                     </div>
                 </div>
                 <div class="extra content">
-                    <a href="<?php echo $free_game_data['url']; ?>"
+                    <a href="<?php echo $data['url']; ?>"
                        target="_blank"
                     >
                         <i class="external icon"></i>
-                        <?php echo $free_game_data['url']; ?>
+                        <?php echo $data['url']; ?>
                     </a>
                 </div>
             </div>

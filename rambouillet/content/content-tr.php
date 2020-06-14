@@ -8,18 +8,18 @@
  */
 
 ?>
-<?php if (isset($game_data) && count($game_data) > 0) : ?>
+<?php if (isset($data) && count($data) > 0) : ?>
     <div class="steam-content-body">
         <?php echo sprintf(
             '%s\'nde bugün alınmaya değer
         toplam %d oyun var.',
             $post_title,
-            count($game_data)
+            count($data)
         ); ?>
     </div>
     <div class="steam-cards">
         <div class="ui cards">
-            <?php foreach ($game_data as $item) :
+            <?php foreach ($data as $item) :
                 ?>
                 <div class="ui card">
                     <div class="image">
