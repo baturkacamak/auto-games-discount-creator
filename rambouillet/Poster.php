@@ -5,8 +5,8 @@ namespace Rambouillet;
 use Curl\Curl;
 use Exception;
 use Rambouillet\Unyson\PluginSettings;
-use Rambouillet\Util\Helper;
-use Rambouillet\Util\Medoo;
+use Rambouillet\Utility\Helper;
+use Rambouillet\Utility\Medoo;
 
 if (!class_exists('Rambouillet\Poster')) {
     /**

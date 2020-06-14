@@ -3,7 +3,7 @@
 namespace Rambouillet;
 
 use Exception;
-use Rambouillet\Util\Medoo;
+use Rambouillet\Utility\Medoo;
 
 if (!class_exists('Rambouillet\Setup')) {
     /**

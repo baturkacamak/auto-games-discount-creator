@@ -5,7 +5,7 @@ namespace Rambouillet;
 use Curl\Curl;
 use GuzzleHttp\Client;
 use Rambouillet\Unyson\PluginSettings;
-use Rambouillet\Util\Medoo;
+use Rambouillet\Utility\Medoo;
 
 if (!class_exists('Rambouillet\Rambouillet')) {
     /**
