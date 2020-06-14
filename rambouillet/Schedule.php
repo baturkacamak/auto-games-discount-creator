@@ -24,19 +24,34 @@ if (!class_exists('Rambouillet\Schedule')) {
 
         /**
          *
+         * @throws \GuzzleHttp\Exception\GuzzleException
+         * @throws \Exception
          */
         public static function startDailyPost()
         {
-            new Scrape();
-            new Poster('daily');
+            $scrape = new Scraper();
+
+            $results = $scrape->getQueryResults();
+            $parser = new Parser();
+            $parser->setQueryResults($results);
+            $parser->parseQueryResults();
+            new Poster();
         }
 
         /**
          *
+         * @throws \GuzzleHttp\Exception\GuzzleException
+         * @throws \Exception
          */
         public static function startHourlyPost()
         {
-            new Scrape('hourly');
+            $scrape = new Scraper('hourly');
+
+            $results = $scrape->getQueryResults();
+            $parser = new Parser();
+            $parser->setQueryResults($results);
+            $parser->parseQueryResults();
+
             new Poster('hourly');
         }
 
