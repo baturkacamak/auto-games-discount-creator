@@ -1,0 +1,77 @@
+.fw-option-type-addable-box {
+	max-width: 100%;
+}
+
+.fw-option-type-addable-box.has-boxes.width-type-full {
+	width: 9999px;
+}
+
+.fw-option-type-addable-box.has-boxes.width-type-fixed {
+	width: 428px; /* same as .fw-backend-option-fixed-width */
+}
+
+.fw-option-type-addable-box > .fw-option-boxes.ui-sortable > .fw-option-box > .fw-postbox {
+	min-width: 100%;
+}
+
+.fw-option-type-addable-box > .fw-option-boxes.ui-sortable > .fw-option-box > .fw-postbox > .hndle {
+	cursor: move !important; /* to rewrite .fw-postbox h3.hndle */
+	word-break: break-all; /* if box text is too long, do not move controls outside box */
+	position: relative;
+}
+
+.fw-option-type-addable-box > .fw-option-boxes.ui-sortable > .fw-option-box > .fw-postbox > .hndle > span {
+	overflow: hidden;
+	white-space: nowrap;
+	max-width: 100%;
+	display: block;
+}
+
+#wpbody-content .fw-option-type-addable-box .metabox-holder {
+	padding: 0;
+	margin: 0;
+}
+
+.fw-option-type-addable-box > .fw-option-boxes > .fw-option-box {
+	margin-bottom: 20px;
+}
+
+.fw-option-type-addable-box > .fw-option-boxes.ui-sortable > .fw-option-box > .fw-postbox > .hndle span:after {
+	content: '\00a0'; /* &nbsp; - when title is empty, box has too small (broken) height */
+}
+
+.fw-option-type-addable-box > .fw-option-boxes.ui-sortable > .fw-option-box > .fw-postbox > .hndle img {
+	vertical-align: middle;
+}
+
+.fw-option-type-addable-box .fw-backend-option-design-customizer {
+	padding: 15px;
+}
+
+
+/* Controls */
+
+
+.fw-option-type-addable-box > .fw-option-boxes > .fw-option-box .hndle .fw-html-after-title {
+	position: absolute;
+	top: 0;
+	right: 27px;
+	display: block;
+	height: 100%;
+	background-color: #FFF;
+	box-sizing: border-box;
+	padding: 0 3px;
+	padding-top: inherit;
+}
+
+.fw-option-type-addable-box > .fw-option-boxes > .fw-option-box .hndle .fw-html-after-title .fw-option-box-controls .fw-option-box-control {
+	text-decoration: none;
+}
+
+.fw-option-type-addable-box > .fw-option-boxes > .fw-option-box .hndle .fw-html-after-title .fw-option-box-controls .fw-option-box-control-wrapper {
+	color: #cccccc;
+}
+
+/* end: Controls */
+
+

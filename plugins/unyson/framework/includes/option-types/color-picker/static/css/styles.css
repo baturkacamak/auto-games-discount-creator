@@ -1,0 +1,54 @@
+input.fw-option-type-color-picker {
+	width: 70px !important;
+}
+
+@media (max-width: 782px) {
+	input.fw-option-type-color-picker {
+		width: 100px !important;
+	}
+}
+
+input.fw-option-type-color-picker.iris-error {
+	background-color: #ffebe8;
+	border-color: #c00;
+	color: #000;
+}
+
+.fw-option-type-color-picker-with-reset-default > .iris-palette-container {
+	bottom: 27px !important;
+}
+
+.fw-option-type-color-picker-iris,
+.fw-option-type-color-picker-iris.iris-picker {
+	z-index: 999;
+	position: absolute;
+}
+
+.fw-option-type-color-picker-iris .fw-option-type-color-picker-reset-default {
+	width: 139px;
+	margin-top: 2px;
+	cursor: pointer;
+}
+
+.fw-option-type-color-picker-iris .fw-option-type-color-picker-reset-default span {
+	line-height: 16px;
+	padding-left: 2px;
+	float: left;
+}
+
+.fw-backend-option-input-type-color-picker .fw-option-help-in-input {
+	top: 4px !important;
+}
+
+/* Fixes https://github.com/ThemeFuse/Unyson/issues/2275 */
+#customize-controls .customize-pane-child > .customize-control:last-child > .fw-backend-customizer-option > div > .fw-backend-option-type-color-picker {
+	padding-bottom: 170px;
+}
+
+/* Fixes https://github.com/ThemeFuse/Unyson/issues/2905 */
+#customize-theme-controls > ul.customize-pane-child {
+	height: 100% !important;
+}
+#customize-controls .customize-pane-child .customize-control:last-child .fw-backend-customizer-option .fw-backend-option-type-gradient {
+ padding-bottom: 170px;
+}

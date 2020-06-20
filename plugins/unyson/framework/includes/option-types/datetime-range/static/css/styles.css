@@ -1,0 +1,20 @@
+.fw-option-type-datetime-picker .delimiter,
+.fw-backend-option-input-type-datetime-range .delimiter {
+	margin: 0 10px;
+}
+
+.fw-option-type-datetime-range .fw-backend-option-descriptor[data-fw-option-id=from],
+.fw-option-type-datetime-range .fw-backend-option-descriptor[data-fw-option-id=to],
+.fw-option-type-datetime-range .delimiter {
+	display: inline-block;
+}
+
+.fw-option-type-datetime-range .fw-option-type-datetime-picker,
+.fw-backend-option-input-type-datetime-range .fw-option-type-datetime-picker {
+	width: 150px;
+}
+
+
+.fw-backend-option-input-type-datetime-range .fw-option-help-in-input {
+	top: 4px !important;
+}

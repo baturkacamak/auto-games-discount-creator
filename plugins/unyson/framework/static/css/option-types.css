@@ -1,0 +1,158 @@
+/*
+Styles for options type from option-types.php file, that has no own style.css
+*/
+
+
+/* placeholder */
+
+.fw-option ::-webkit-input-placeholder {
+	font-style: italic;
+	line-height: 1.4em;
+}
+
+.fw-option ::-moz-placeholder {
+	font-style: italic;
+	line-height: 1.4em;
+}
+
+.fw-option :-ms-input-placeholder {
+	font-style: italic;
+	line-height: 1.4em;
+}
+
+.fw-option :-moz-placeholder {
+	font-style: italic;
+	line-height: 1.4em;
+}
+
+.fw-option::-webkit-input-placeholder {
+	font-style: italic;
+	line-height: 1.4em;
+}
+
+.fw-option::-moz-placeholder {
+	font-style: italic;
+	line-height: 1.4em;
+}
+
+.fw-option:-ms-input-placeholder {
+	font-style: italic;
+	line-height: 1.4em;
+}
+
+.fw-option:-moz-placeholder {
+	font-style: italic;
+	line-height: 1.4em;
+}
+
+/* end: placeholder */
+
+
+textarea.fw-option-type-textarea {
+	max-width: 100%;
+	min-width: 100%;
+}
+
+
+.fw-backend-option-type-hidden,
+.fw-backend-option-type-unique {
+	display: none;
+}
+
+
+.fw-backend-option-input-type-text .fw-option-help-in-input,
+.fw-backend-option-input-type-short-text .fw-option-help-in-input,
+.fw-backend-option-input-type-select .fw-option-help-in-input,
+.fw-backend-option-input-type-short-select .fw-option-help-in-input,
+.fw-backend-option-input-type-password .fw-option-help-in-input {
+	top: 4px !important;
+}
+
+
+.fw-option-type-checkboxes > div,
+.fw-option-type-radio > div {
+	margin-bottom: 6px;
+}
+
+
+.fw-option-width-short {
+	width: 100px !important;
+}
+
+/* Radio and Checkboxes inline */
+
+.fw-option-type-checkboxes.fw-option-type-checkboxes-inline > div,
+.fw-option-type-radio.fw-option-type-radio-inline > div {
+	float: left;
+	margin-right: 10px;
+}
+
+.fw-option-type-checkboxes.fw-option-type-checkboxes-inline > div:last-child,
+.fw-option-type-radio.fw-option-type-radio-inline > div:last-child {
+	margin-right: 0;
+}
+
+/* RTL Radio and Checkboxes inline */
+body.rtl .fw-option-type-checkboxes.fw-option-type-checkboxes-inline > div:not(:last-child),
+body.rtl .fw-option-type-radio.fw-option-type-radio-inline > div:not(:last-child) {
+	float: right;
+	margin: 0 0 0 10px;
+}
+
+/* end: Radio amd Checkboxes inline */
+
+/* modal fixes */
+
+.fw-modal .media-frame input[type=password],
+.fw-modal .media-frame input[type=number],
+.fw-modal .media-frame input[type=search],
+.fw-modal .media-frame input[type=email],
+.fw-modal .media-frame input[type=text],
+.fw-modal .media-frame input[type=url],
+.fw-modal .media-frame select,
+.fw-modal .media-frame textarea {
+	font-size: 14px;
+}
+
+.fw-modal .media-frame select {
+	line-height: 28px;
+	height: 28px;
+	padding: 2px;
+	margin: 1px;
+}
+
+.fw-modal .media-frame select[multiple] {
+	height: auto;
+}
+
+.fw-modal .media-frame input[type=password],
+.fw-modal .media-frame input[type=number],
+.fw-modal .media-frame input[type=search],
+.fw-modal .media-frame input[type=email],
+.fw-modal .media-frame input[type=text],
+.fw-modal .media-frame input[type=url] {
+	height: 28px;
+	padding: 3px 5px;
+}
+
+.fw-modal .media-frame textarea {
+	padding: 3px 5px;
+}
+
+.fw-modal .media-frame textarea.code {
+	line-height: 1.4;
+}
+
+@media (max-width: 782px) {
+	.fw-option-type-checkboxes label,
+	.fw-option-type-radio label {
+		vertical-align: middle;
+		line-height: 2.2em;
+	}
+
+	select.fw-option-type-select-multiple {
+		height: auto !important;
+	}
+}
+
+/* end: modal fixes */

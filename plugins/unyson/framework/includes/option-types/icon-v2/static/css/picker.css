@@ -1,0 +1,438 @@
+.fw-icon-v2-preview-wrapper {
+	display: flex;
+	align-items: center;
+}
+
+.fw-icon-v2-preview-wrapper.fw-has-icon .fw-icon-v2-preview {
+	background-image: url(../img/transparent_bg.png);
+	background-size: 10px;
+}
+
+.fw-icon-v2-preview {
+	background-image: url('../img/no-image.png');
+	margin-right: 25px;
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	background-size: contain;
+	box-sizing: border-box;
+}
+
+.fw-icon-v2-preview:hover {
+	opacity: 0.9;
+}
+
+.fw-icon-v2-preview i {
+	color: #7a7a7a;
+	background-repeat: no-repeat;
+	line-height: 1em;
+	margin: 0;
+}
+
+/*** Unycon Icon fix ***/
+.fw-icon-v2-preview i.unycon:before {
+	font-size: 30px;
+}
+
+.fw-icon-v2-preview a {
+	position: absolute;
+	opacity: 0;
+	width: 12px;
+	height: 12px;
+	top: -9px;
+	right: -6px;
+	font-size: 14px !important;
+	outline: none;
+}
+
+.fw-icon-v2-preview-wrapper.fw-has-icon .fw-icon-v2-preview:hover {
+	opacity: 1;
+}
+
+.fw-icon-v2-preview-wrapper.fw-has-icon .fw-icon-v2-preview:hover a {
+	opacity: 1;
+}
+
+.fw-icon-v2-preview a:before {
+	background-color: #fff;
+	border-radius: 100%;
+}
+
+.fw-icon-v2-preview-wrapper[data-icon-type="custom-upload"] .fw-icon-v2-preview i {
+	background-size: cover;
+}
+
+.fw-icon-v2-preview-wrapper[data-icon-type="icon-font"] .fw-icon-v2-preview i {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/*** Small Preview ***/
+.fw-icon-v2-preview-small .fw-icon-v2-preview {
+	width: 30px;
+	height: 30px;
+	margin-right: 15px;
+}
+
+.fw-icon-v2-preview-small .fw-icon-v2-preview i {
+	font-size: 26px;
+	width: 26px;
+	height: 26px;
+}
+
+/*** Medium Preview ***/
+.fw-icon-v2-preview-medium .fw-icon-v2-preview {
+	width: 55px;
+	height: 55px;
+}
+
+.fw-icon-v2-preview-medium .fw-icon-v2-preview i {
+	font-size: 50px;
+	width: 50px;
+	height: 50px;
+}
+
+/*** Large Preview ***/
+.fw-icon-v2-preview-large .fw-icon-v2-preview {
+	width: 70px;
+	height: 70px;
+}
+
+.fw-icon-v2-preview-large .fw-icon-v2-preview i {
+	font-size: 65px;
+	width: 65px;
+	height: 65px;
+}
+
+/*** Sauron Preview :) ***/
+.fw-icon-v2-preview-sauron .fw-icon-v2-preview {
+	background-image: url('../img/sauron.png');
+	width: 70px;
+	height: 70px;
+}
+
+.fw-icon-v2-preview-sauron .fw-icon-v2-preview i {
+	font-size: 65px;
+	width: 65px;
+	height: 65px;
+}
+
+/*** Icon Picker Modal *******************************************************/
+.fw-icon-v2-picker-modal .media-frame-title {
+	display: none;
+}
+
+.fw-icon-v2-picker-modal .media-frame-content {
+	overflow: hidden;
+	top: 0 !important;
+}
+
+.fw-icon-v2-picker-modal .media-frame-content form,
+.fw-icon-v2-picker-modal .media-frame-content form > .fw-options-tabs-wrapper,
+.fw-icon-v2-picker-modal .media-frame-content form > .fw-options-tabs-wrapper .fw-inner,
+.fw-icon-v2-picker-modal .media-frame-content form > .fw-options-tabs-wrapper .fw-inner .fw-options-tab,
+.fw-icon-v2-picker-modal .media-frame-content form > .fw-options-tabs-wrapper .fw-inner .fw-options-tab > .fw-backend-option,
+.fw-icon-v2-picker-modal .media-frame-content form > .fw-options-tabs-wrapper .fw-inner .fw-options-tab > .fw-backend-option > div,
+.fw-icon-v2-picker-modal .media-frame-content form > .fw-options-tabs-wrapper .fw-inner .fw-options-tab > .fw-backend-option > div > div,
+.fw-icon-v2-picker-modal .media-frame-content form > .fw-options-tabs-wrapper .fw-inner .fw-options-tab > .fw-backend-option > div > div > div,
+.fw-icon-v2-picker-modal .media-frame-content form > .fw-options-tabs-wrapper .fw-inner .fw-options-tab > .fw-backend-option > div > div > div > div,
+.fw-icon-v2-picker-modal .media-frame-content form > .fw-options-tabs-wrapper .fw-inner .fw-options-tab > .fw-backend-option > div > div > div > div > div,
+.fw-icon-v2-picker-modal .media-frame-content form > .fw-options-tabs-wrapper .fw-inner .fw-options-tab > .fw-backend-option > div > div > div > div > div .fw-option-html {
+	height: 100%;
+}
+
+.fw-icon-v2-picker-modal .media-frame-content form > div .fw-options-tabs-contents {
+	height: calc( 100% - 58px);
+}
+
+.fw-icon-v2-picker-modal .fw-backend-options-last-border-hider {
+	display: none;
+}
+
+.fw-icon-v2-picker-modal .fw-options-tabs-list {
+	position: relative;
+	z-index: 2;
+	background-color: #fcfcfc;
+}
+
+.fw-icon-v2-picker-modal .fw-options-tabs-list li.ui-tabs-active,
+.fw-icon-v2-picker-modal .fw-options-tabs-list li.ui-state-active {
+	background: #fff;
+}
+
+.fw-icon-v2-picker-modal .fw-options-tabs-contents {
+	margin-top: 0;
+}
+
+.fw-icon-v2-picker-modal .fw-backend-option-design-default:not(.fw-backend-option-type-upload) {
+	padding: 0;
+}
+
+.fw-icon-v2-icons-library .fw-option-html {
+	display: flex;
+	flex-direction: column;
+}
+
+/*** Toolbar ***/
+.fw-icon-v2-toolbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex: 0 0 auto;
+	height: 75px;
+	padding: 0 20px;
+	border-bottom: 1px solid #e5e5e5;
+	box-shadow: 0px 3px 5px 0px rgba(0, 0, 0, 0.02);
+}
+
+.fw-icon-v2-toolbar input,
+.fw-icon-v2-toolbar > div {
+	width: 49% !important;
+	height: 28px;
+	margin: 0;
+	flex: 1 1 auto;
+}
+
+.fw-icon-v2-toolbar > div {
+	margin-right: 15px;
+}
+
+.fw-icon-v2-toolbar > div > .selectize-input,
+.fw-icon-v2-toolbar > div > .selectize-dropdown {
+	margin: 0 !important;
+}
+
+.fw-icon-v2-toolbar input::-webkit-input-placeholder {
+	font-style: normal;
+}
+
+.fw-icon-v2-toolbar input::-moz-placeholder {
+	font-style: normal;
+}
+
+.fw-icon-v2-toolbar input:-ms-input-placeholder {
+	font-style: normal;
+}
+
+.fw-icon-v2-toolbar h3 {
+	margin: 0;
+}
+
+/*** Pack wrapper ***/
+.fw-icon-v2-library-pack-wrapper {
+	flex: 1 1 auto;
+    overflow-y: auto;
+    /*padding: 0 20px 0 20px; */
+    box-shadow: inset 0px -5px 10px 0px rgba(0, 0, 0, 0.02);
+}
+
+.fw-icon-v2-library-pack-wrapper {
+	height: calc(100% - 75px);
+}
+
+.fw-favorite-icons-wrapper {
+	height: 100%;
+}
+
+/*** Search wrapper ***/
+.fw-search-icons-wrapper h2 {
+	position: relative;
+	text-align: left;
+	font-size: 13px;
+	color: #555d66;
+	overflow: hidden;
+}
+
+.fw-search-icons-wrapper h2 span {
+	position: relative;
+	padding: 0 10px;
+	background-color: #fff;
+	z-index: 2;
+	left: 10px;
+}
+
+.fw-search-icons-wrapper h2:before {
+	position: absolute;
+	left: 50px;
+	top: 10px;
+	content: '';
+	width: 100%;
+	height: 1px;
+	background-color: #e2e4e7;
+}
+
+.fw-search-icons-wrapper h2:after {
+	position: absolute;
+	left: -50px;
+	top: 10px;
+	content: '';
+	width: 100%;
+	height: 1px;
+	background-color: #e2e4e7;
+}
+
+
+/*** Note ***/
+.fw-icon-v2-note {
+	text-align: center;
+	padding-top: 30px;
+}
+
+.fw-icon-v2-note h3 {
+	margin: 10px 0 0 0;
+}
+
+.fw-icon-v2-note i {
+	width: 15px;
+	height: 15px;
+	font-size: 15px;
+	line-height: 19px;
+}
+
+/*** Icon List ***/
+.fw-icon-v2-library-pack {
+	display: flex;
+	justify-content: flex-start;
+	flex-wrap: wrap;
+	width: 100%;
+	margin: 0;
+	padding: 20px;
+	box-sizing: border-box;
+}
+
+.fw-icon-v2-library-pack > li {
+	display: flex;
+	position: relative;
+	width: 65px;
+	height: 65px;
+	flex: 1 0 65px;
+	cursor: pointer;
+	margin-bottom: 0;
+	border-radius: 4px;
+}
+
+.fw-icon-v2-library-pack > li:before {
+	content: '';
+	width: 100%;
+	padding-top: 100%;
+}
+
+.fw-icon-v2-library-pack > li.fw-ghost-item {
+	opacity: 0;
+	height: 0;
+}
+
+.fw-icon-v2-library-pack > li.fw-ghost-item:before {
+	display: none;
+}
+
+.fw-icon-v2-library-pack > li.selected {
+	z-index: 5;
+}
+
+.fw-icon-v2-library-pack > li:hover:not(.selected) {
+	box-shadow: inset 0px 0px 0px 3px #d2d7dc;
+}
+
+.fw-icon-v2-library-pack .fw-icon-inner {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	top: 0;
+	left: 0;
+}
+
+.fw-icon-v2-library-pack .fw-icon-inner i {
+	font-size: 22px;
+	color: #6a737b;
+}
+
+.fw-icon-v2-library-pack .fw-icon-inner img {
+	max-width: 30px !important;
+	max-height: 30px !important;
+	height: auto;
+}
+
+.fw-icon-v2-library-pack .fw-icon-inner a {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	width: 12px;
+	height: 12px;
+	font-size: 12px;
+	opacity: 0;
+	color: #d2d7dc;
+}
+
+.fw-icon-v2-library-pack .fw-icon-inner:hover a {
+	opacity: 1;
+}
+
+.fw-icon-v2-library-pack .fw-icon-inner a:hover,
+.fw-icon-v2-library-pack .fw-icon-v2-favorite a {
+	color: #ffb900;
+}
+
+.fw-favorite-icons-wrapper .fw-icon-inner a:hover,
+.fw-icon-v2-library-pack .fw-icon-inner .dashicons-no:hover {
+	color: #CC0000;
+}
+
+.fw-favorite-icons-wrapper .fw-icon-inner a:before {
+	content: "\f158";
+}
+
+/*** Color Schemes ***********************************************************/
+
+/*** Default ***/
+.admin-color-fresh .fw-icon-v2-library-pack > li.selected {
+	box-shadow: inset 0px 0px 0px 3px #00aadc;
+}
+
+
+/*** Light ***/
+.admin-color-light .fw-icon-v2-library-pack > li.selected {
+	box-shadow: inset 0px 0px 0px 3px #02A4C7;
+}
+
+
+/*** Blue ***/
+.admin-color-blue .fw-icon-v2-library-pack > li.selected {
+	box-shadow: inset 0px 0px 0px 3px #e3af55;
+}
+
+
+/*** Cofee ***/
+.admin-color-coffee .fw-icon-v2-library-pack > li.selected {
+	box-shadow: inset 0px 0px 0px 3px #c7a589;
+}
+
+
+/*** Ectoplasm ***/
+.admin-color-ectoplasm .fw-icon-v2-library-pack > li.selected {
+	box-shadow: inset 0px 0px 0px 3px #a3b745;
+}
+
+
+/*** Midnight ***/
+.admin-color-midnight .fw-icon-v2-library-pack > li.selected {
+	box-shadow: inset 0px 0px 0px 3px #e14d43;
+}
+
+
+/*** Ocean ***/
+.admin-color-ocean .fw-icon-v2-library-pack > li.selected {
+	box-shadow: inset 0px 0px 0px 3px #9ebaa0;
+}
+
+
+/*** Sunrise ***/
+.admin-color-sunrise .fw-icon-v2-library-pack > li.selected {
+	box-shadow: inset 0px 0px 0px 3px #dd823b;
+}
