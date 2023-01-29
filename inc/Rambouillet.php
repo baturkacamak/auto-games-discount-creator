@@ -7,77 +7,78 @@ use GuzzleHttp\Client;
 use Rambouillet\Unyson\PluginSettings;
 
 if (!class_exists('Rambouillet\Rambouillet')) {
-    /**
-     * Class Rambouillet
-     *
-     * @package Rambouillet
-     */
-    class Rambouillet extends AbstractRambouillet
-    {
+	/**
+	 * Class Rambouillet
+	 *
+	 * @package Rambouillet
+	 */
+	class Rambouillet extends AbstractRambouillet
+	{
 
-        /**
-         * The one true instance.
-         */
-        private static $instance;
-        /**
-         * @var Client
-         */
-        public $guzzle;
-        /**
-         * @var Settings
-         */
-        public $settings;
+		/**
+		 * The one true instance.
+		 */
+		private static $instance;
+		/**
+		 * @var Client
+		 */
+		public $guzzle;
+		/**
+		 * @var Settings
+		 */
+		public $settings;
 
-        /**
-         * Constructor.
-         */
-        public function __construct()
-        {
-            parent::__construct();
-            return self::$instance = $this;
-        }
+		/**
+		 * Constructor.
+		 */
+		public function __construct()
+		{
+			parent::__construct();
 
-        /**
-         * Get singleton instance.
-         *
-         * @since 1.5
-         */
-        public static function getInstance()
-        {
-            if (!isset(self::$instance)) {
-                self::$instance = new self();
-            }
+			return self::$instance = $this;
+		}
 
-            return self::$instance;
-        }
+		/**
+		 * Get singleton instance.
+		 *
+		 * @since 1.5
+		 */
+		public static function getInstance()
+		{
+			if (!isset(self::$instance)) {
+				self::$instance = new self();
+			}
 
-        /**
-         *
-         */
-        public function init()
-        {
-            if (!function_exists('is_plugin_active')) {
-                include_once ABSPATH . '/wp-admin/includes/plugin.php';
-            }
-        }
+			return self::$instance;
+		}
 
-        public function addActions()
-        {
-            add_action('after_setup_theme', [$this, 'actionInit']);
-            add_action('startScheduleDailyPost', ['Rambouillet\Schedule', 'startDailyPost']);
-            add_action('startScheduleHourlyPost', ['Rambouillet\Schedule', 'startHourlyPost']);
-        }
+		/**
+		 *
+		 */
+		public function init()
+		{
+			if (!function_exists('is_plugin_active')) {
+				include_once ABSPATH . '/wp-admin/includes/plugin.php';
+			}
+		}
 
-        /**
-         *
-         */
-        public function actionInit()
-        {
-            if (defined('DOING_AJAX') && DOING_AJAX) {
-                return false;
-            }
-            $this->settings = new Settings('rambouillet-settings');
-            new Schedule();
-        }
-    }
+		public function addActions()
+		{
+			add_action('after_setup_theme', [$this, 'actionInit']);
+			add_action('startScheduleDailyPost', ['Rambouillet\SchedulingTask', 'startDailyPostTask']);
+			add_action('startScheduleHourlyPost', ['Rambouillet\SchedulingTask', 'startHourlyPostTask']);
+		}
+
+		/**
+		 *
+		 */
+		public function actionInit()
+		{
+			if (defined('DOING_AJAX') && DOING_AJAX) {
+				return false;
+			}
+			$this->settings = new Settings('rambouillet-settings');
+			new Schedule();
+		}
+	}
 }
