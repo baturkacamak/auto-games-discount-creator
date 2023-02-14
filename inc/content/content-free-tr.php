@@ -7,7 +7,7 @@
  * Time: 10:34
  */
 
-use Rambouillet\Utility\Helper;
+use AutoGamesDiscountCreator\Utility\Helper;
 
 ?>
 <?php if (isset($data) && count($data) > 0) : ?>

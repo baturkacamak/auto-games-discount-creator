@@ -6,7 +6,8 @@
     "ext-libxml": "*",
     "ext-dom": "*",
     "ext-json": "*",
-    "ext-intl": "*"
+    "ext-intl": "*",
+    "philo/laravel-blade": "3.*"
   },
   "scripts": {
     "csfix": "phpcbf --standard=PSR12 --colors --ignore=./vendor,./rambouillet/unyson/PluginSettings.php,./bootstrap.php ./",
@@ -18,7 +19,12 @@
   },
   "autoload": {
     "psr-4": {
-      "Rambouillet\\": "Rambouillet/"
+      "AutoGamesDiscountCreator\\": "inc/"
+    }
+  },
+  "config": {
+    "allow-plugins": {
+      "kylekatarnls/update-helper": true
     }
   }
 }

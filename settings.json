@@ -1,0 +1,54 @@
+{
+  "queries": [
+    {
+      "query-key": "metauser",
+      "query-value": "-type/7,-type/8,-type/6,&storelow,&cut/75/100,&metauser/75/100,&steam,&steamcnt/500/max,-dlc",
+      "query-type": "daily"
+    },
+    {
+      "query-key": "metacritic",
+      "query-value": "-type/7,-type/8,-type/6,&storelow,&cut/75/100,&metacritic/75/100,&steam,&steamcnt/500/max,-dlc",
+      "query-type": "daily"
+    },
+    {
+      "query-key": "steamuser",
+      "query-value": "-type/7,-type/8,-type/6,&storelow,&cut/75/100,&steam,&steamperc/75/100,&steamcnt/500/max,-package,-dlc",
+      "query-type": "daily"
+    },
+    {
+      "query-key": "metacriticprice",
+      "query-value": "-type/7,-type/8,-type/6,&storelow,&price/0/30,&metacritic/75/100,&steam,&steamcnt/500/max,-dlc",
+      "query-type": "daily"
+    },
+    {
+      "query-key": "steamuserprice",
+      "query-value": "-type/7,-type/8,-type/6,&storelow,&price/0/30,&steam,&steamperc/75/100,&steamcnt/500/max,-package,-dlc",
+      "query-type": "daily"
+    },
+    {
+      "query-key": "metauserprice",
+      "query-value": "-type/7,-type/8,-type/6,&storelow,&price/0/5,&metauser/75/100,&steam,&steamcnt/500/max,-dlc",
+      "query-type": "daily"
+    },
+    {
+      "query-key": "metauservote",
+      "query-value": "-type/7,-type/8,-type/6,&storelow,&metauser/50/100,&steam,&steamcnt/10000/max,-dlc",
+      "query-type": "daily"
+    },
+    {
+      "query-key": "metacriticvote",
+      "query-value": "-type/7,-type/8,-type/6,&storelow,&metacritic/50/100,&steam,&steamcnt/10000/max,-dlc",
+      "query-type": "daily"
+    },
+    {
+      "query-key": "steamuservote",
+      "query-value": "-type/7,-type/8,-type/6,&storelow,&steam,&steamperc/50/100,&steamcnt/10000/max,-package,-dlc",
+      "query-type": "daily"
+    },
+    {
+      "query-key": "freegame",
+      "query-value": "epic,bundlestars,humblestore,steam,gog,&steamperc/65/100,&price/0/0,&regular/5/max,&historylow;/options:strict",
+      "query-type": "hourly"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-=== Rambouillet Test ===
+=== Auto_Games_Discount_Creator Test ===
 Contributors: (this should be a list of wordpress.org userid's)
 Donate link: https://example.com/
 Tags: comments, spam
