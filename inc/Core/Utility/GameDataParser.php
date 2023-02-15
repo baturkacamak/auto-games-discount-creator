@@ -53,6 +53,11 @@ if (!class_exists('AutoGamesDiscountCreator\GameDataParser')) {
 			return $game_information;
 		}
 
+		/**
+		 * @param DOMXPath $xpath The instance of the DOMXPath class.
+		 *
+		 * @return DOMNodeList Returns a list of DOMNode elements matching the xpath query.
+		 */
 		private function getGameNodes($xpath)
 		{
 			return $this->domHandler->handleXPathQuery(
@@ -61,6 +66,13 @@ if (!class_exists('AutoGamesDiscountCreator\GameDataParser')) {
 			);
 		}
 
+		/**
+		 * @param DOMXPath $xpath The instance of the DOMXPath class.
+		 * @param DOMNode $gameNode The DOMNode of the game information.
+		 * @param int $indexNodes The index of the DOMNode in the DOMNodeList.
+		 *
+		 * @return stdClass|null Returns an object containing information of the game or null if the information cannot be parsed.
+		 */
 		private function parseGameNode($xpath, $gameNode, $indexNodes)
 		{
 			$gameInfo = new stdClass();
@@ -88,6 +100,13 @@ if (!class_exists('AutoGamesDiscountCreator\GameDataParser')) {
 			return $gameInfo;
 		}
 
+		/**
+		 * @param DOMXPath $xpath The instance of the DOMXPath class.
+		 * @param DOMNode $gameNode The DOMNode of the game information.
+		 * @param int $indexNodes The index of the DOMNode in the DOMNodeList.
+		 *
+		 * @return DOMNode|null Returns the DOMNode containing the name of the game or null if the node cannot be found.
+		 */
 		private function getNameNode($xpath, $gameNode, $indexNodes)
 		{
 			return $this->domHandler->handleXPathQuery(
@@ -97,6 +116,12 @@ if (!class_exists('AutoGamesDiscountCreator\GameDataParser')) {
 			)->item($indexNodes);
 		}
 
+		/**
+		 * @param DOMXPath $xpath The instance of the DOMXPath class.
+		 * @param DOMNode $gameNode The DOMNode of the game information.
+		 *
+		 * @return DOMNode|null Returns the DOMNode containing the price of the game or null if the node cannot be found.
+		 */
 		private function getPriceNode($xpath, $gameNode)
 		{
 			return $this->domHandler->handleXPathQuery(
@@ -106,6 +131,12 @@ if (!class_exists('AutoGamesDiscountCreator\GameDataParser')) {
 			)->item(0);
 		}
 
+		/**
+		 * @param DOMXPath $xpath The instance of the DOMXPath class.
+		 * @param DOMNode $gameNode The DOMNode of the game information.
+		 *
+		 * @return DOMNode|null Returns the DOMNode containing the discount information of the game or null if the node cannot be found.
+		 */
 		private function getCutNode($xpath, $gameNode)
 		{
 			return $this->domHandler->handleXPathQuery(
@@ -115,6 +146,11 @@ if (!class_exists('AutoGamesDiscountCreator\GameDataParser')) {
 			)->item(0);
 		}
 
+		/**
+		 * @param DOMNode $priceNode The DOMNode containing the price information.
+		 *
+		 * @return float Returns the price of the game as a floating-point number.
+		 */
 		private function parsePriceNode($priceNode)
 		{
 			return floatval(
