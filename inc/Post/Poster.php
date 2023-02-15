@@ -54,6 +54,8 @@ if (!class_exists('AutoGamesDiscountCreator\Post\Poster')) {
 		 * Poster constructor.
 		 *
 		 * @param PostTypeStrategy $postTypeStrategy The strategy for the post type (daily or free games).
+		 *
+		 * @throws Exception
 		 */
 		public function __construct(PostTypeStrategy $postTypeStrategy)
 		{
@@ -74,23 +76,23 @@ if (!class_exists('AutoGamesDiscountCreator\Post\Poster')) {
 		 */
 		public function post()
 		{
-			$gameData  = $this->postTypeStrategy->getGameData(['price[>]' => 0]);
-			$postTitle = $this->postTypeStrategy->getPostTitle();
+			$game_data  = $this->postTypeStrategy->getGameData(['price[>]' => 0]);
+			$post_title = $this->postTypeStrategy->getPostTitle();
 
-			if ($this->postTypeStrategy->shouldCreatePost($gameData)) {
-				$postId = $this->wpFunctions->wpInsertPost([
-					'post_content'  => $this->postTypeStrategy->getPostContent($gameData),
+			if ($this->postTypeStrategy->shouldCreatePost($game_data)) {
+				$post_id = $this->wpFunctions->wpInsertPost([
+					'post_content'  => $this->postTypeStrategy->getPostContent($game_data),
 					'post_status'   => 'publish',
 					'post_author'   => self::POST_AUTHOR,
-					'post_excerpt'  => $postTitle . ' ' . self::TAGS,
-					'post_title'    => $postTitle,
+					'post_excerpt'  => $post_title . ' ' . self::TAGS,
+					'post_title'    => $post_title,
 					'tags_input'    => self::TAGS,
 					'post_category' => [self::POST_CATEGORY],
 				]);
 
-				if ($postId) {
-					$this->updatePostMeta($postId, $postTitle);
-					$this->markGamesAsPosted($gameData);
+				if ($post_id) {
+					$this->updatePostMeta($post_id, $post_title);
+					$this->markGamesAsPosted($game_data);
 				}
 			}
 		}
@@ -123,7 +125,7 @@ if (!class_exists('AutoGamesDiscountCreator\Post\Poster')) {
 					$this->database->update(
 						'rambouillet_posts',
 						['status_wordpress' => 1],
-						['price_id' => $game->price_id]
+						['price_id' => (int)$game['price_id']]
 					);
 				} catch (Exception $exception) {
 					throw $exception;

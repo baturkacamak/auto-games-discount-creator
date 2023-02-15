@@ -84,16 +84,16 @@ class DailyPostStrategy implements PostTypeStrategy
 	{
 		$gameData = array_map(
 			function ($game) {
-				$exploded = explode('/', $game->url);
-				$steamId  = $exploded[count($exploded) - 1];
+				$exploded = explode('/', $game['url']);
+				$steam_id = $exploded[count($exploded) - 1];
 				$type     = $exploded[3];
 
 				return [
-					'name'          => $game->name,
-					'thumbnail_url' => "https://steamcdn-a.akamaihd.net/steam/{$type}s/{$steamId}/header.jpg",
-					'price'         => $game->price,
-					'cut'           => $game->cut,
-					'url'           => $game->url,
+					'name'          => $game['name'],
+					'thumbnail_url' => "https://steamcdn-a.akamaihd.net/steam/{$type}s/{$steam_id}/header.jpg",
+					'price'         => $game['price'],
+					'cut'           => $game['cut'],
+					'url'           => $game['url'],
 				];
 			},
 			$gameData

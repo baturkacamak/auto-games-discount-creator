@@ -16,33 +16,33 @@ class GameInformationDatabase
 	/**
 	 * Inserts game information into the database.
 	 *
-	 * @param stdClass $gameInfo An instance of the stdClass class.
+	 * @param array $gameInfo An instance of the stdClass class.
 	 *
-	 * @return array
+	 * @return string
 	 * @throws Exception
 	 */
-	public function insertGameInformation(stdClass $gameInfo): array
+	public function insertGameInformation(array $gameInfo): string
 	{
 		if ($this->isValidGameInformation($gameInfo)) {
 			$game_medoo = $this->insertOrGetGamesTable($gameInfo);
 			$price_medoo = $this->insertOrGetPricesTable($game_medoo, $gameInfo);
 			$this->insertOrGetRambouilletPostsTable($price_medoo);
 
-			return $price_medoo;
+			return $price_medoo['ID'];
 		}
 	}
 
 	/**
 	 * Check if the game information is valid.
 	 *
-	 * @param stdClass $gameInfo An instance of the stdClass class.
+	 * @param array $gameInfo An instance of the stdClass class.
 	 *
 	 * @return bool
 	 */
 	private function isValidGameInformation($gameInfo): bool
 	{
-		return isset($gameInfo->name) && !empty($gameInfo->name)
-		       && !empty($gameInfo->cut) && !empty($gameInfo->url);
+		return isset($gameInfo['name']) && !empty($gameInfo['name'])
+		       && !empty($gameInfo['cut']) && !empty($gameInfo['url']);
 	}
 
 	/**
@@ -58,8 +58,8 @@ class GameInformationDatabase
 		return Database::getInstance()->insertOrGet(
 			'games',
 			[
-				'name' => $gameInfo->name,
-				'url'  => $gameInfo->url,
+				'name' => $gameInfo['name'],
+				'url'  => $gameInfo['url'],
 			]
 		);
 	}
@@ -68,7 +68,7 @@ class GameInformationDatabase
 	 * Inserts the price information into the 'prices' table or retrieves the ID of the existing record.
 	 *
 	 * @param array $gameMedoo The information of the game in the 'games' table.
-	 * @param stdClass $gameInfo An instance of the stdClass class.
+	 * @param array $gameInfo An instance of the stdClass class.
 	 *
 	 * @return array
 	 * @throws Exception
@@ -79,8 +79,8 @@ class GameInformationDatabase
 			'prices',
 			[
 				'game_id' => (int)$gameMedoo['ID'],
-				'price'   => (double)$gameInfo->price,
-				'cut'     => (int)$gameInfo->cut,
+				'price'   => (double)$gameInfo['price'],
+				'cut'     => (int)$gameInfo['cut'],
 			]
 		);
 	}

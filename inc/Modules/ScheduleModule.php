@@ -42,7 +42,7 @@ class ScheduleModule extends AbstractModule
 		$game_informations = $this->fetchGameInformations('hourly');
 		if ($game_informations) {
 			foreach ($game_informations as $index => $game_information) {
-				$free_games_post_strategy = new FreeGamesPostStrategy(get_object_vars($game_information));
+				$free_games_post_strategy = new FreeGamesPostStrategy($game_information);
 				(new Poster($free_games_post_strategy))->post();
 			}
 		}
@@ -50,7 +50,6 @@ class ScheduleModule extends AbstractModule
 
 	public function setup()
 	{
-		$this->wpFunction->addHook('init', 'startHourlyPostTask');
 		$this->wpFunction->scheduleEvent('startScheduleHourlyPost', 'hourly', 'startHourlyPostTask');
 		$this->wpFunction->scheduleEvent('startDailyPostTask', 'daily', 'startDailyPostTask', strtotime('06:00:00'));
 	}
@@ -66,11 +65,11 @@ class ScheduleModule extends AbstractModule
 			$game_informations = (new GameDataParser())->parseCacheResult($query_result);
 			if ($game_informations) {
 				foreach ($game_informations as $index => $game_information) {
-					$game_information->price_id = (new GameInformationDatabase())->insertGameInformation
+					$game_information['price_id'] = (new GameInformationDatabase())->insertGameInformation
 					(
 						$game_information
 					);
-					$game_informations[$index]  = $game_information;
+					$game_informations[$index]    = $game_information;
 				}
 			}
 		}

@@ -71,45 +71,45 @@ if (!class_exists('AutoGamesDiscountCreator\GameDataParser')) {
 		/**
 		 * Parses a single game node from the cache result.
 		 *
-		 * @param DOMXPath  $xpath      An instance of the DOMXPath class.
-		 * @param DOMNode   $gameNode   A single game node.
-		 * @param int       $indexNodes The index of the game node in the list of game nodes.
+		 * @param DOMXPath $xpath An instance of the DOMXPath class.
+		 * @param DOMNode $gameNode A single game node.
+		 * @param int $indexNodes The index of the game node in the list of game nodes.
 		 *
-		 * @return stdClass An object containing the name, price, URL, and discount of a game.
+		 * @return array An array containing the name, price, URL, and discount of a game.
 		 */
 		private function parseGameNode($xpath, $gameNode, $indexNodes)
 		{
-			$gameInfo = new stdClass();
-			$nameNode = $this->getNameNode($xpath, $gameNode, $indexNodes);
+			$game_info = [];
+			$name_node = $this->getNameNode($xpath, $gameNode, $indexNodes);
 
-			if (!$nameNode) {
+			if (!$name_node) {
 				return null;
 			}
 
-			$gameInfo->name = $this->domHandler->getDomNodeValue($nameNode);
-			$priceNode      = $this->getPriceNode($xpath, $gameNode);
+			$game_info['name'] = $this->domHandler->getDomNodeValue($name_node);
+			$price_node        = $this->getPriceNode($xpath, $gameNode);
 
-			if (!$priceNode) {
+			if (!$price_node) {
 				return null;
 			}
 
-			$gameInfo->price = $this->parsePriceNode($priceNode);
-			$gameInfo->url   = untrailingslashit(
-				$this->domHandler->getNodeAttribute($priceNode, 'href')
+			$game_info['price'] = $this->parsePriceNode($price_node);
+			$game_info['url']   = untrailingslashit(
+				$this->domHandler->getNodeAttribute($price_node, 'href')
 			);
-			$cutNode         = $this->getCutNode($xpath, $gameNode);
+			$cut_node           = $this->getCutNode($xpath, $gameNode);
 
-			$gameInfo->cut = $this->domHandler->getDomNodeValue($cutNode);
+			$game_info['cut'] = $this->domHandler->getDomNodeValue($cut_node);
 
-			return $gameInfo;
+			return $game_info;
 		}
 
 		/**
 		 * Get the name node of a game from the cache result.
 		 *
-		 * @param DOMXPath $xpath      An instance of the DOMXPath class.
-		 * @param DOMNode  $gameNode   A single game node.
-		 * @param int      $indexNodes The index of the game node in the list of game nodes.
+		 * @param DOMXPath $xpath An instance of the DOMXPath class.
+		 * @param DOMNode $gameNode A single game node.
+		 * @param int $indexNodes The index of the game node in the list of game nodes.
 		 *
 		 * @return DOMNode The name node of the game.
 		 */
@@ -125,8 +125,8 @@ if (!class_exists('AutoGamesDiscountCreator\GameDataParser')) {
 		/**
 		 * Get the price node of a game from the cache result.
 		 *
-		 * @param DOMXPath $xpath    An instance of the DOMXPath class.
-		 * @param DOMNode  $gameNode A single game node.
+		 * @param DOMXPath $xpath An instance of the DOMXPath class.
+		 * @param DOMNode $gameNode A single game node.
 		 *
 		 * @return DOMNode The price node of the game.
 		 */
@@ -142,8 +142,8 @@ if (!class_exists('AutoGamesDiscountCreator\GameDataParser')) {
 		/**
 		 * Get the discount node of a game from the cache result.
 		 *
-		 * @param DOMXPath $xpath    An instance of the DOMXPath class.
-		 * @param DOMNode  $gameNode A single game node.
+		 * @param DOMXPath $xpath An instance of the DOMXPath class.
+		 * @param DOMNode $gameNode A single game node.
 		 *
 		 * @return DOMNode The discount node of the game.
 		 */

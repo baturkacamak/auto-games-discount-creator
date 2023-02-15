@@ -9,7 +9,7 @@
 namespace AutoGamesDiscountCreator\Post\Strategy;
 
 use AutoGamesDiscountCreator\Core\Utility\Date;
-use AutoGamesDiscountCreator\Core\Utility\Web;
+use AutoGamesDiscountCreator\Core\Utility\ImageRetriever;
 use Philo\Blade\Blade;
 
 class FreeGamesPostStrategy implements PostTypeStrategy
@@ -18,7 +18,7 @@ class FreeGamesPostStrategy implements PostTypeStrategy
 	 * @var array $gameData An array of game data for the free game.
 	 */
 	private array $gameData;
-	private Web $web;
+	private ImageRetriever $imageRetriever;
 
 
 	/**
@@ -28,8 +28,8 @@ class FreeGamesPostStrategy implements PostTypeStrategy
 	 */
 	public function __construct(array $gameData)
 	{
-		$this->gameData = $gameData;
-		$this->web      = new Web();
+		$this->gameData       = $gameData;
+		$this->imageRetriever = new ImageRetriever();
 	}
 
 	/**
@@ -57,7 +57,7 @@ class FreeGamesPostStrategy implements PostTypeStrategy
 	 */
 	public function getGameData(array $where): array
 	{
-		return $this->gameData;
+		return [$this->gameData];
 	}
 
 	/**
@@ -82,7 +82,7 @@ class FreeGamesPostStrategy implements PostTypeStrategy
 	 */
 	public function getPostContent(array $gameData): string
 	{
-		$this->gameData['thumbnail_url'] = $this->web->getRemoteImage($gameData['url']) ?? false;
+		$this->gameData['thumbnail_url'] = $this->imageRetriever->retrieve($gameData[0]['url']) ?? false;
 
 		return $this->getContent('content-free-tr', ['game' => $this->gameData]);
 	}

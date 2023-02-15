@@ -3,6 +3,7 @@
 namespace AutoGamesDiscountCreator\Core\Utility;
 
 use AutoGamesDiscountCreator\DOMNodeHandler;
+use GuzzleHttp\Exception\GuzzleException;
 
 /**
  * Class ImageRetriever
@@ -40,16 +41,21 @@ class ImageRetriever
 	 * @param string $url The URL to retrieve the remote image from.
 	 *
 	 * @return string The URL of the remote image.
+	 * @throws GuzzleException
 	 */
 	public function retrieve(string $url): string
 	{
+		$html_response = '';
 		// Get the HTML response from the URL
-		$html_response = $this->webClient->get($url);
+		try {
+			$html_response = $this->webClient->get($url);
+		} catch (GuzzleException $e) {
+		}
 
 		// If the HTML response was successful
 		if ($html_response) {
 			// Create the XPath object from the HTML response
-			$xpath           = $this->domHandler->createXpathFromHtml($html_response);
+			$xpath = $this->domHandler->createXpathFromHtml($html_response);
 
 			// Get the meta image node from the XPath object
 			$meta_image_node = $xpath->query('//meta[@property="og:image"]');
@@ -65,5 +71,4 @@ class ImageRetriever
 
 		return '';
 	}
-
 }

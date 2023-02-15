@@ -9,6 +9,7 @@
 namespace AutoGamesDiscountCreator\Core\Utility;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
 use Psr\Http\Message\ResponseInterface;
 
 class WebClient
@@ -36,6 +37,7 @@ class WebClient
 	 * @param string $url The URL to make the request to.
 	 *
 	 * @return string The response body.
+	 * @throws GuzzleException
 	 */
 	public function get(string $url = ''): string
 	{
@@ -43,7 +45,13 @@ class WebClient
 			return $this->client->request('GET')->getBody()->getContents();
 		}
 
-		return $this->client->get($url)->getBody()->getContents();
+		$response = $this->client->get($url);
+		if (200 === $response->getStatusCode()) {
+			return $response->getBody()->getContents();
+		}
+
+
+		return '';
 	}
 
 	/**
