@@ -3,12 +3,14 @@
 /**
  * Plugin Name:     Auto Games Discount Creator
  * Plugin URI:      https://github.com/baturkacamak/auto-games-discount-creator
- * Description:     Creates automatic discounts for games
+ * Description:     A WordPress plugin that allows you to create game discount posts automatically by scraping data from isthereanydeal.com. The plugin fetches the latest game deals and creates posts on your WordPress site, making it easier to keep your site updated with the latest game discounts.
  * Author:          Batur Kacamak
  * Author URI:      https://batur.info
  * Text Domain:     auto-games-discount-creator
  * Domain Path:     /languages
- * Version:         0.1.0
+ * Version:         1.1.0
+ * License:         GPL-3.0+
+ * License URI:     https://www.gnu.org/licenses/gpl-3.0.txt
  *
  * @package         AutoGamesDiscountCreator
  */
