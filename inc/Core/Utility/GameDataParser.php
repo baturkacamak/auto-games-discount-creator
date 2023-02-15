@@ -54,9 +54,11 @@ if (!class_exists('AutoGamesDiscountCreator\GameDataParser')) {
 		}
 
 		/**
-		 * @param DOMXPath $xpath The instance of the DOMXPath class.
+		 * Get game nodes from the cache result.
 		 *
-		 * @return DOMNodeList Returns a list of DOMNode elements matching the xpath query.
+		 * @param DOMXPath $xpath An instance of the DOMXPath class.
+		 *
+		 * @return DOMNodeList A list of game nodes.
 		 */
 		private function getGameNodes($xpath)
 		{
@@ -67,11 +69,13 @@ if (!class_exists('AutoGamesDiscountCreator\GameDataParser')) {
 		}
 
 		/**
-		 * @param DOMXPath $xpath The instance of the DOMXPath class.
-		 * @param DOMNode $gameNode The DOMNode of the game information.
-		 * @param int $indexNodes The index of the DOMNode in the DOMNodeList.
+		 * Parses a single game node from the cache result.
 		 *
-		 * @return stdClass|null Returns an object containing information of the game or null if the information cannot be parsed.
+		 * @param DOMXPath  $xpath      An instance of the DOMXPath class.
+		 * @param DOMNode   $gameNode   A single game node.
+		 * @param int       $indexNodes The index of the game node in the list of game nodes.
+		 *
+		 * @return stdClass An object containing the name, price, URL, and discount of a game.
 		 */
 		private function parseGameNode($xpath, $gameNode, $indexNodes)
 		{
@@ -101,11 +105,13 @@ if (!class_exists('AutoGamesDiscountCreator\GameDataParser')) {
 		}
 
 		/**
-		 * @param DOMXPath $xpath The instance of the DOMXPath class.
-		 * @param DOMNode $gameNode The DOMNode of the game information.
-		 * @param int $indexNodes The index of the DOMNode in the DOMNodeList.
+		 * Get the name node of a game from the cache result.
 		 *
-		 * @return DOMNode|null Returns the DOMNode containing the name of the game or null if the node cannot be found.
+		 * @param DOMXPath $xpath      An instance of the DOMXPath class.
+		 * @param DOMNode  $gameNode   A single game node.
+		 * @param int      $indexNodes The index of the game node in the list of game nodes.
+		 *
+		 * @return DOMNode The name node of the game.
 		 */
 		private function getNameNode($xpath, $gameNode, $indexNodes)
 		{
@@ -117,10 +123,12 @@ if (!class_exists('AutoGamesDiscountCreator\GameDataParser')) {
 		}
 
 		/**
-		 * @param DOMXPath $xpath The instance of the DOMXPath class.
-		 * @param DOMNode $gameNode The DOMNode of the game information.
+		 * Get the price node of a game from the cache result.
 		 *
-		 * @return DOMNode|null Returns the DOMNode containing the price of the game or null if the node cannot be found.
+		 * @param DOMXPath $xpath    An instance of the DOMXPath class.
+		 * @param DOMNode  $gameNode A single game node.
+		 *
+		 * @return DOMNode The price node of the game.
 		 */
 		private function getPriceNode($xpath, $gameNode)
 		{
@@ -132,10 +140,12 @@ if (!class_exists('AutoGamesDiscountCreator\GameDataParser')) {
 		}
 
 		/**
-		 * @param DOMXPath $xpath The instance of the DOMXPath class.
-		 * @param DOMNode $gameNode The DOMNode of the game information.
+		 * Get the discount node of a game from the cache result.
 		 *
-		 * @return DOMNode|null Returns the DOMNode containing the discount information of the game or null if the node cannot be found.
+		 * @param DOMXPath $xpath    An instance of the DOMXPath class.
+		 * @param DOMNode  $gameNode A single game node.
+		 *
+		 * @return DOMNode The discount node of the game.
 		 */
 		private function getCutNode($xpath, $gameNode)
 		{
@@ -147,9 +157,11 @@ if (!class_exists('AutoGamesDiscountCreator\GameDataParser')) {
 		}
 
 		/**
-		 * @param DOMNode $priceNode The DOMNode containing the price information.
+		 * Parses the price node of a game from the cache result.
 		 *
-		 * @return float Returns the price of the game as a floating-point number.
+		 * @param DOMNode $priceNode The price node of the game.
+		 *
+		 * @return float The parsed price of the game.
 		 */
 		private function parsePriceNode($priceNode)
 		{
