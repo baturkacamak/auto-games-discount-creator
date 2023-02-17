@@ -11,7 +11,8 @@
   },
   "scripts": {
     "csfix": "phpcbf --standard=PSR12 --colors --ignore=./vendor,./rambouillet/unyson/PluginSettings.php,./bootstrap.php ./",
-    "cscheck": "phpcs --standard=PSR12 --colors --ignore=./vendor,./rambouillet/unyson/PluginSettings.php,./bootstrap.php ./"
+    "cscheck": "phpcs --standard=PSR12 --colors --ignore=./vendor,./rambouillet/unyson/PluginSettings.php,./bootstrap.php ./",
+    "test": "phpunit --color tests"
   },
   "require-dev": {
     "phpunit/phpunit": "^8.5",
