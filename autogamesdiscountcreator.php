@@ -3,32 +3,19 @@
 /**
  * Plugin Name:     Auto Games Discount Creator
  * Plugin URI:      https://github.com/baturkacamak/auto-games-discount-creator
- * Description:     A WordPress plugin that allows you to create game discount posts automatically by scraping data from isthereanydeal.com. The plugin fetches the latest game deals and creates posts on your WordPress site, making it easier to keep your site updated with the latest game discounts.
- * Author:          Batur Kacamak
- * Author URI:      https://batur.info
- * Text Domain:     auto-games-discount-creator
- * Domain Path:     /languages
- * Version:         1.1.0
- * License:         GPL-3.0+
- * License URI:     https://www.gnu.org/licenses/gpl-3.0.txt
+ * Description:     A WordPress plugin that allows you to create game discount posts automatically by scraping data
+ * from isthereanydeal.com. The plugin fetches the latest game deals and creates posts on your WordPress site, making
+ * it easier to keep your site updated with the latest game discounts. Author:          Batur Kacamak Author URI:
+ * https://batur.info Text Domain:     auto-games-discount-creator Domain Path:     /languages Version:         1.1.0
+ * License:         GPL-3.0+ License URI:     https://www.gnu.org/licenses/gpl-3.0.txt
  *
  * @package         AutoGamesDiscountCreator
  */
 
 use AutoGamesDiscountCreator\AutoGamesDiscountCreator;
 
-define('AGDC_VERSION', '0.1.0');
-define('AGDC_PLUGIN_FILE', __FILE__);
-define('AGDC_PLUGIN_DIR', __DIR__);
-define('AGDC_PLUGIN_URL', plugin_dir_url(__FILE__));
-defined('AGDC_BASE_FILE') or define(
-	'AGDC_BASE_FILE',
-	str_replace(dirname(__FILE__, 2) . '/', '', __FILE__)
-);
-
-if (!defined('FW') && file_exists(__DIR__ . '/plugins/unyson/framework/bootstrap.php')) {
-	require_once __DIR__ . '/plugins/unyson/framework/bootstrap.php';
-}
+include_once __DIR__ . '/globals/constants.php';
+include_once __DIR__ . '/globals/functions.php';
 
 if (file_exists(__DIR__ . '/vendor/autoload.php')) {
 	require_once __DIR__ . '/vendor/autoload.php';
@@ -105,31 +92,6 @@ if (!function_exists('agdcIncorrectSlugNotice')) {
 
 	if ('wp-game-discount-poster' !== basename(AGDC_PLUGIN_DIR)) {
 		add_action('admin_notices', 'agdcIncorrectSlug');
-	}
-}
-
-if (!function_exists('agdc_get')) {
-	/**
-	 * Retrieve a value from an array using a path string.
-	 *
-	 * @param string $path    The path string, e.g. "keyA/keyB/keyC".
-	 * @param array  $array   The array to extract the value from.
-	 * @param mixed  $default The default value to return if the path is not found.
-	 *
-	 * @return mixed
-	 */
-	function agdc_get(string $path, array $array, $default = null)
-	{
-		$path = explode('/', $path);
-
-		foreach ($path as $key) {
-			if (!array_key_exists($key, $array)) {
-				return $default;
-			}
-			$array = $array[$key];
-		}
-
-		return $array;
 	}
 }
 
