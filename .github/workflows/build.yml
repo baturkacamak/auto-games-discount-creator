@@ -1,0 +1,22 @@
+name: Build and Test Plugin
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: composer install
+
+      - name: Upload vendor directory
+        uses: actions/upload-artifact@v2
+        with:
+          name: vendor
+          path: vendor
