@@ -18,10 +18,12 @@ jobs:
       - name: Build plugin package
         run: |
           zip -r plugin.zip .
-          mv plugin.zip $GITHUB_WORKSPACE
+          mkdir artifacts
+          mv plugin.zip artifacts/
+          mv artifacts $GITHUB_WORKSPACE
 
       - name: Upload plugin package
         uses: actions/upload-artifact@v2
         with:
           name: plugin
-          path: plugin.zip
+          path: artifacts/plugin.zip
