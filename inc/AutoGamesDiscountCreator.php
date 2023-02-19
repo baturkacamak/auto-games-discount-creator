@@ -2,6 +2,8 @@
 
 namespace AutoGamesDiscountCreator;
 
+use AutoGamesDiscountCreator\Core\Module\Initializer\ModuleInitializer;
+use AutoGamesDiscountCreator\Core\Module\Registry\ModuleRegistrar;
 use AutoGamesDiscountCreator\Core\ModulesManager;
 use AutoGamesDiscountCreator\Core\Utility\JsonParser;
 use GuzzleHttp\Client;
@@ -61,7 +63,9 @@ if (!class_exists('AutoGamesDiscountCreator\AutoGamesDiscountCreator')) {
 		 */
 		public function init()
 		{
-			new ModulesManager();
+			$module_registrar = new ModuleRegistrar();
+			$module_initializer = new ModuleInitializer();
+			new ModulesManager($module_registrar, $module_initializer);
 		}
 	}
 }

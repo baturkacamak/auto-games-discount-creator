@@ -8,7 +8,7 @@
 
 namespace AutoGamesDiscountCreator\Modules;
 
-use AutoGamesDiscountCreator\Core\AbstractModule;
+use AutoGamesDiscountCreator\Core\Module\AbstractModule;
 use AutoGamesDiscountCreator\Core\Utility\Database;
 
 class SetupModule extends AbstractModule

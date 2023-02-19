@@ -8,7 +8,7 @@
 
 namespace AutoGamesDiscountCreator\Modules;
 
-use AutoGamesDiscountCreator\Core\AbstractModule;
+use AutoGamesDiscountCreator\Core\Module\AbstractModule;
 use AutoGamesDiscountCreator\Core\Utility\Date;
 use AutoGamesDiscountCreator\Core\Utility\GameDataParser;
 use AutoGamesDiscountCreator\Core\Utility\GameInformationDatabase;
