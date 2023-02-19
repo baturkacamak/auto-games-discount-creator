@@ -1,4 +1,4 @@
-name: Build and Package Plugin
+name: Build and Test Plugin
 
 on:
   push:
@@ -15,15 +15,8 @@ jobs:
       - name: Install dependencies
         run: composer install --no-dev
 
-      - name: Build plugin package
-        run: |
-          zip -r plugin.zip .
-          mkdir artifacts
-          mv plugin.zip artifacts/
-          mv artifacts $GITHUB_WORKSPACE
-
-      - name: Upload plugin package
+      - name: Upload vendor directory
         uses: actions/upload-artifact@v2
         with:
-          name: plugin
-          path: artifacts/plugin.zip
+          name: vendor
+          path: vendor
