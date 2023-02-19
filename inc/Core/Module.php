@@ -10,5 +10,11 @@ namespace AutoGamesDiscountCreator\Core;
 
 interface Module
 {
+
+	/**
+	 * Add hooks from this method
+	 *
+	 * @return void
+	 */
 	public function setup();
 }
