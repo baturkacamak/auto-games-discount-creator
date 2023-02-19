@@ -103,7 +103,7 @@ class Date
 			'D' => '%a',
 			'l' => '%A',
 			'M' => '%b',
-			default => '',
+			default => $dateFormat,
 		};
 	}
 

@@ -9,12 +9,10 @@
 
 namespace AutoGamesDiscountCreator\Core\Utility;
 
-use DOMElement;
 use DOMNode;
 use DOMNodeList;
 use DOMXPath;
 use Exception;
-use AutoGamesDiscountCreator\Utility\Helper;
 
 if (!class_exists('AutoGamesDiscountCreator\DOMNodeHandler')) {
 	/**
@@ -27,17 +25,19 @@ if (!class_exists('AutoGamesDiscountCreator\DOMNodeHandler')) {
 		/**
 		 * Get the value of a node from an xpath query
 		 *
-		 * @param DOMXPath $xpath The xpath query to execute
+		 * @param DOMNodeList $nodeList The xpath query to execute
 		 *
 		 * @return mixed The value of the node, or null if the query returned no results
 		 */
-		public function getXpathNodeValue($xpath = null)
+		public function getFirstNodeValue(\DOMNodeList $nodeList)
 		{
-			if (isset($xpath) && $xpath->length > 0) {
-				foreach ($xpath as $index => $item) {
-					return $item->nodeValue;
+			if ($nodeList->length > 0) {
+				foreach ($nodeList as $index => $node) {
+					return $node->nodeValue;
 				}
 			}
+
+			return null;
 		}
 
 		/**
