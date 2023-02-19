@@ -8,6 +8,10 @@
 
 namespace AutoGamesDiscountCreator\Core;
 
+use AutoGamesDiscountCreator\Core;
+use AutoGamesDiscountCreator\Core\Module\Initializer\ModuleInitializerInterface;
+use AutoGamesDiscountCreator\Core\Module\Registry\ModuleRegistrarInterface;
+
 /**
  * Modules Manager Class
  *
@@ -28,47 +32,13 @@ class ModulesManager
 	 * ModulesManager constructor.
 	 *
 	 * In the constructor, the `registerModules` and `initModules` methods are called.
-	 */
-	public function __construct()
-	{
-		$this->registerModules();
-		$this->initModules();
-	}
-
-	/**
-	 * A method to register all the modules in the `Modules` directory.
 	 *
-	 * The method scans the directory and checks if the file is a valid module class that extends the `AbstractModule`
-	 * class. If it is, the class name is added to the `$modules` array.
+	 * @param ModuleRegistrarInterface $module_registrar The module registrar dependency.
+	 * @param ModuleInitializerInterface $module_initializer The module initializer dependency.
 	 */
-	private function registerModules()
+	public function __construct(ModuleRegistrarInterface $module_registrar, ModuleInitializerInterface $module_initializer)
 	{
-		$modules_path = __DIR__ . '/../Modules/';
-
-		$modules = scandir($modules_path);
-		foreach ($modules as $module) {
-			if ($module === '.' || $module === '..') {
-				continue;
-			}
-
-			$module_name = pathinfo($module, PATHINFO_FILENAME);
-			$class_name  = "AutoGamesDiscountCreator\\Modules\\{$module_name}";
-			if (class_exists($class_name) && is_subclass_of($class_name, AbstractModule::class)) {
-				$this->modules[] = $class_name;
-			}
-		}
-	}
-
-	/**
-	 * A method to initialize all the registered modules.
-	 *
-	 * The method creates a new instance of each module class stored in the `$modules` array.
-	 */
-	private function initModules()
-	{
-		/** @var Module $module */
-		foreach ($this->modules as $module) {
-			(new $module())->setup();
-		}
+		$this->modules = $module_registrar->registerModules();
+		$module_initializer->initModules($this->modules);
 	}
 }
