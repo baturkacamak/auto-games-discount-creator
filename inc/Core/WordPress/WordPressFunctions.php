@@ -8,19 +8,19 @@
 
 namespace AutoGamesDiscountCreator\Core\WordPress;
 
+use WP_Error;
+
 /**
  * A class for working with WordPress functions.
  */
-class WordPressFunctions
+class WordPressFunctions implements WordPressFunctionsInterface
 {
 	private $class;
 
 	/**
-	 * WordPressFunctions constructor.
-	 *
-	 * @param $class
+	 * @param mixed $class
 	 */
-	public function __construct($class)
+	public function setClass($class): void
 	{
 		$this->class = $class;
 	}
@@ -103,5 +103,17 @@ class WordPressFunctions
 	public function wpInsertPost(array $post_data)
 	{
 		return \wp_insert_post($post_data);
+	}
+
+	/**
+	 * Checks whether a post exists with the specified title.
+	 *
+	 * @param string $postTitle The title of the post to check.
+	 *
+	 * @return int|false The post ID if it exists, false otherwise.
+	 */
+	public function postExists($postTitle)
+	{
+		return post_exists($postTitle);
 	}
 }

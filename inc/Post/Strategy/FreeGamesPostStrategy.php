@@ -10,6 +10,8 @@ namespace AutoGamesDiscountCreator\Post\Strategy;
 
 use AutoGamesDiscountCreator\Core\Utility\Date;
 use AutoGamesDiscountCreator\Core\Utility\ImageRetriever;
+use AutoGamesDiscountCreator\Core\Utility\UtilityFactory;
+use AutoGamesDiscountCreator\Core\WordPress\WordPressFunctionsInterface;
 use Philo\Blade\Blade;
 
 class FreeGamesPostStrategy implements PostTypeStrategy
@@ -19,17 +21,21 @@ class FreeGamesPostStrategy implements PostTypeStrategy
 	 */
 	private array $gameData;
 	private ImageRetriever $imageRetriever;
-
+	private WordPressFunctionsInterface $wordpressFunctions;
 
 	/**
 	 * FreeGamesPostStrategy constructor.
 	 *
 	 * @param array $gameData An array of game data for the free game.
+	 * @param UtilityFactory $utilityFactory The utility factory to use for creating the ImageRetriever instance.
+	 * @param WordPressFunctionsInterface $wordpressFunctions The WordPress functions instance.
 	 */
-	public function __construct(array $gameData)
+	public function __construct(array $gameData, UtilityFactory $utilityFactory, WordPressFunctionsInterface $wordpressFunctions)
 	{
-		$this->gameData       = $gameData;
-		$this->imageRetriever = new ImageRetriever();
+		$this->gameData = $gameData;
+
+		$this->imageRetriever = $utilityFactory->createImageRetriever();
+		$this->wordpressFunctions = $wordpressFunctions;
 	}
 
 	/**

@@ -9,6 +9,7 @@
 namespace AutoGamesDiscountCreator\Post\Strategy;
 
 use AutoGamesDiscountCreator\Core\Utility\Date;
+use AutoGamesDiscountCreator\Core\WordPress\WordPressFunctionsInterface;
 use Philo\Blade\Blade;
 
 /**
@@ -22,15 +23,22 @@ class DailyPostStrategy implements PostTypeStrategy
 	 * @var array $gameData An array of game data to include in the post content.
 	 */
 	private array $gameData;
+	protected WordPressFunctionsInterface $wpFunctions;
+	private Date $date;
 
 	/**
 	 * DailyPostStrategy constructor.
 	 *
 	 * @param array $gameData An array of game data to include in the post content.
+	 * @param WordPressFunctionsInterface $wpFunctions
+	 * @param Date $date
 	 */
-	public function __construct(array $gameData)
+	public function __construct(array $gameData, WordPressFunctionsInterface $wpFunctions, Date $date)
 	{
+		$this->wpFunctions = $wpFunctions;
+		$this->wpFunctions->setClass($this);
 		$this->gameData = $gameData;
+		$this->date     = $date;
 	}
 
 	/**
@@ -43,7 +51,7 @@ class DailyPostStrategy implements PostTypeStrategy
 		return sprintf(
 			"%d %s %d Steam İndirimleri",
 			date('d'),
-			(new Date())->getTurkishName(),
+			$this->date->getTurkishName(),
 			date('Y')
 		);
 	}
@@ -69,7 +77,7 @@ class DailyPostStrategy implements PostTypeStrategy
 	 */
 	public function shouldCreatePost(array $gameData): bool
 	{
-		return $gameData && count($gameData) > 0 && 0 === post_exists($this->getPostTitle());
+		return $gameData && count($gameData) > 0 && 0 === $this->wpFunctions->postExists($this->getPostTitle());
 	}
 
 	/**

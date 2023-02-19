@@ -2,7 +2,6 @@
 
 namespace AutoGamesDiscountCreator\Core\Utility;
 
-use AutoGamesDiscountCreator\DOMNodeHandler;
 use GuzzleHttp\Exception\GuzzleException;
 
 /**
@@ -29,10 +28,10 @@ class ImageRetriever
 	 *
 	 * Initializes the WebClient and DOMNodeHandler instances.
 	 */
-	public function __construct()
+	public function __construct(WebClient $webClient, DOMHandler $domHandler)
 	{
-		$this->webClient  = new WebClient();
-		$this->domHandler = new DOMHandler();
+		$this->webClient  = $webClient;
+		$this->domHandler = $domHandler;
 	}
 
 	/**
@@ -41,7 +40,6 @@ class ImageRetriever
 	 * @param string $url The URL to retrieve the remote image from.
 	 *
 	 * @return string The URL of the remote image.
-	 * @throws GuzzleException
 	 */
 	public function retrieve(string $url): string
 	{

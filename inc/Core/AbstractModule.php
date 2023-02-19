@@ -9,14 +9,16 @@
 namespace AutoGamesDiscountCreator\Core;
 
 use AutoGamesDiscountCreator\Core\WordPress\WordPressFunctions;
+use AutoGamesDiscountCreator\Core\WordPress\WordPressFunctionsInterface;
 use JetBrains\PhpStorm\Pure;
 
 abstract class AbstractModule implements Module
 {
-	protected WordPressFunctions $wpFunction;
+	protected WordPressFunctions $wpFunctions;
 
-	#[Pure] public function __construct()
+	#[Pure] public function __construct(WordPressFunctionsInterface $wpFunctions)
 	{
-		$this->wpFunction = new WordPressFunctions($this);
+		$this->wpFunctions = $wpFunctions;
+		$this->wpFunctions->setClass($this);
 	}
 }

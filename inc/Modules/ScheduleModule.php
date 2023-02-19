@@ -9,9 +9,12 @@
 namespace AutoGamesDiscountCreator\Modules;
 
 use AutoGamesDiscountCreator\Core\AbstractModule;
+use AutoGamesDiscountCreator\Core\Utility\Date;
 use AutoGamesDiscountCreator\Core\Utility\GameDataParser;
 use AutoGamesDiscountCreator\Core\Utility\GameInformationDatabase;
 use AutoGamesDiscountCreator\Core\Utility\Scraper;
+use AutoGamesDiscountCreator\Core\Utility\UtilityFactory;
+use AutoGamesDiscountCreator\Core\WordPress\WordPressFunctions;
 use AutoGamesDiscountCreator\Post\Poster;
 use AutoGamesDiscountCreator\Post\Strategy\DailyPostStrategy;
 use AutoGamesDiscountCreator\Post\Strategy\FreeGamesPostStrategy;
@@ -26,8 +29,10 @@ class ScheduleModule extends AbstractModule
 	 */
 	public function startDailyPostTask()
 	{
-		$game_informations = $this->fetchGameInformations();
-		$daily_strategy    = new DailyPostStrategy($game_informations);
+		$game_informations   = $this->fetchGameInformations();
+		$wordpress_functions = new WordPressFunctions();
+		$date                = new Date();
+		$daily_strategy      = new DailyPostStrategy($game_informations, $wordpress_functions, $date);
 		(new Poster($daily_strategy))->post();
 	}
 
@@ -39,10 +44,16 @@ class ScheduleModule extends AbstractModule
 	 */
 	public function startHourlyPostTask()
 	{
-		$game_informations = $this->fetchGameInformations('hourly');
+		$game_informations   = $this->fetchGameInformations('hourly');
+		$wordpress_functions = new WordPressFunctions();
+		$utility_factory     = new UtilityFactory();
 		if ($game_informations) {
 			foreach ($game_informations as $index => $game_information) {
-				$free_games_post_strategy = new FreeGamesPostStrategy($game_information);
+				$free_games_post_strategy = new FreeGamesPostStrategy(
+					$game_information,
+					$utility_factory,
+					$wordpress_functions
+				);
 				(new Poster($free_games_post_strategy))->post();
 			}
 		}
@@ -50,8 +61,8 @@ class ScheduleModule extends AbstractModule
 
 	public function setup()
 	{
-		$this->wpFunction->scheduleEvent('startScheduleHourlyPost', 'hourly', 'startHourlyPostTask');
-		$this->wpFunction->scheduleEvent('startDailyPostTask', 'daily', 'startDailyPostTask', strtotime('06:00:00'));
+		$this->wpFunctions->scheduleEvent('startScheduleHourlyPost', 'hourly', 'startHourlyPostTask');
+		$this->wpFunctions->scheduleEvent('startDailyPostTask', 'daily', 'startDailyPostTask', strtotime('06:00:00'));
 	}
 
 	/**
