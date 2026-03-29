@@ -135,6 +135,353 @@
           "steamPerc": { "min": 65, "max": 100 }
         }
       }
-    ]
+    ],
+    "market_payloads": {
+      "tr-tr": {
+        "daily_payloads": [
+          {
+            "query-key": "tr_daily_under_1_historical_low",
+            "sort": null,
+            "pages": 1,
+            "nondeals": true,
+            "gids": [],
+            "filter": {
+              "price": { "min": null, "max": 1 },
+              "cut": { "min": 90, "max": 100 },
+              "flag": "H",
+              "drm": [61, 16, 35],
+              "type": [1],
+              "typeNot": [2, 3, 7, 8],
+              "steamPerc": { "min": 27, "max": 100 },
+              "metaCritic": { "min": 17, "max": 100 },
+              "metaUser": { "min": 29, "max": 100 },
+              "openCritic": { "min": 25, "max": 100 },
+              "shops": [61, 6, 16, 35, 37, 52]
+            }
+          },
+          {
+            "query-key": "tr_daily_under_5_historical_low",
+            "sort": null,
+            "pages": 1,
+            "nondeals": true,
+            "gids": [],
+            "filter": {
+              "price": { "min": 0, "max": 5 },
+              "cut": { "min": 90, "max": 100 },
+              "flag": "H",
+              "drm": [61, 16, 35],
+              "type": [1],
+              "typeNot": [2, 3, 7, 8],
+              "steamPerc": { "min": 27, "max": 100 },
+              "metaCritic": { "min": 17, "max": 100 },
+              "metaUser": { "min": 29, "max": 100 },
+              "openCritic": { "min": 25, "max": 100 },
+              "shops": [61, 6, 16, 35, 37, 52]
+            }
+          },
+          {
+            "query-key": "tr_daily_store_low_multi_store_quality",
+            "sort": null,
+            "pages": 1,
+            "nondeals": true,
+            "gids": [],
+            "filter": {
+              "flag": "S",
+              "cut": { "min": 75, "max": 100 },
+              "metaUser": { "min": 70, "max": 100 },
+              "metaCritic": { "min": 70, "max": 100 },
+              "steamPerc": { "min": 70, "max": 100 },
+              "steamCount": { "min": 500, "max": null },
+              "drm": [61, 16, 35],
+              "type": [1],
+              "typeNot": [2, 3, 7, 8],
+              "shops": [61, 6, 16, 35, 37, 52]
+            }
+          }
+        ],
+        "hourly_payloads": [
+          {
+            "query-key": "tr_hourly_free_games_multi_store",
+            "sort": null,
+            "pages": 1,
+            "nondeals": true,
+            "gids": [],
+            "filter": {
+              "price": { "min": 0, "max": 0 },
+              "regular": { "min": 5, "max": null },
+              "flag": "H",
+              "shops": [16, 35, 37, 61, 6],
+              "type": [1],
+              "typeNot": [2, 3, 7, 8],
+              "steamPerc": { "min": 65, "max": 100 }
+            }
+          }
+        ]
+      },
+      "en-us": {
+        "daily_payloads": [
+          {
+            "query-key": "us_daily_under_1_historical_low",
+            "sort": null,
+            "pages": 1,
+            "nondeals": true,
+            "gids": [],
+            "filter": {
+              "price": { "min": null, "max": 1 },
+              "cut": { "min": 90, "max": 100 },
+              "flag": "H",
+              "drm": [61, 16, 35],
+              "type": [1],
+              "typeNot": [2, 3, 7, 8],
+              "steamPerc": { "min": 27, "max": 100 },
+              "metaCritic": { "min": 17, "max": 100 },
+              "metaUser": { "min": 29, "max": 100 },
+              "openCritic": { "min": 25, "max": 100 },
+              "shops": [61, 6, 16, 35, 37, 52]
+            }
+          },
+          {
+            "query-key": "us_daily_under_5_historical_low",
+            "sort": null,
+            "pages": 1,
+            "nondeals": true,
+            "gids": [],
+            "filter": {
+              "price": { "min": 0, "max": 5 },
+              "cut": { "min": 90, "max": 100 },
+              "flag": "H",
+              "drm": [61, 16, 35],
+              "type": [1],
+              "typeNot": [2, 3, 7, 8],
+              "steamPerc": { "min": 27, "max": 100 },
+              "metaCritic": { "min": 17, "max": 100 },
+              "metaUser": { "min": 29, "max": 100 },
+              "openCritic": { "min": 25, "max": 100 },
+              "shops": [61, 6, 16, 35, 37, 52]
+            }
+          },
+          {
+            "query-key": "us_daily_store_low_multi_store_quality",
+            "sort": null,
+            "pages": 1,
+            "nondeals": true,
+            "gids": [],
+            "filter": {
+              "flag": "S",
+              "cut": { "min": 75, "max": 100 },
+              "metaUser": { "min": 70, "max": 100 },
+              "metaCritic": { "min": 70, "max": 100 },
+              "steamPerc": { "min": 70, "max": 100 },
+              "steamCount": { "min": 500, "max": null },
+              "drm": [61, 16, 35],
+              "type": [1],
+              "typeNot": [2, 3, 7, 8],
+              "shops": [61, 6, 16, 35, 37, 52]
+            }
+          }
+        ],
+        "hourly_payloads": [
+          {
+            "query-key": "us_hourly_free_games_multi_store",
+            "sort": null,
+            "pages": 1,
+            "nondeals": true,
+            "gids": [],
+            "filter": {
+              "price": { "min": 0, "max": 0 },
+              "regular": { "min": 5, "max": null },
+              "flag": "H",
+              "shops": [16, 35, 37, 61, 6],
+              "type": [1],
+              "typeNot": [2, 3, 7, 8],
+              "steamPerc": { "min": 65, "max": 100 }
+            }
+          }
+        ]
+      },
+      "en-gb": {
+        "daily_payloads": [
+          {
+            "query-key": "gb_daily_budget_historical_low",
+            "sort": null,
+            "pages": 1,
+            "nondeals": true,
+            "gids": [],
+            "filter": {
+              "price": { "min": 0, "max": 4 },
+              "cut": { "min": 90, "max": 100 },
+              "flag": "H",
+              "drm": [61, 16, 35],
+              "type": [1],
+              "typeNot": [2, 3, 7, 8],
+              "steamPerc": { "min": 27, "max": 100 },
+              "metaCritic": { "min": 17, "max": 100 },
+              "metaUser": { "min": 29, "max": 100 },
+              "openCritic": { "min": 25, "max": 100 },
+              "shops": [61, 6, 16, 35, 37, 52]
+            }
+          },
+          {
+            "query-key": "gb_daily_store_low_multi_store_quality",
+            "sort": null,
+            "pages": 1,
+            "nondeals": true,
+            "gids": [],
+            "filter": {
+              "flag": "S",
+              "cut": { "min": 75, "max": 100 },
+              "metaUser": { "min": 70, "max": 100 },
+              "metaCritic": { "min": 70, "max": 100 },
+              "steamPerc": { "min": 70, "max": 100 },
+              "steamCount": { "min": 500, "max": null },
+              "drm": [61, 16, 35],
+              "type": [1],
+              "typeNot": [2, 3, 7, 8],
+              "shops": [61, 6, 16, 35, 37, 52]
+            }
+          }
+        ],
+        "hourly_payloads": [
+          {
+            "query-key": "gb_hourly_free_games_multi_store",
+            "sort": null,
+            "pages": 1,
+            "nondeals": true,
+            "gids": [],
+            "filter": {
+              "price": { "min": 0, "max": 0 },
+              "regular": { "min": 5, "max": null },
+              "flag": "H",
+              "shops": [16, 35, 37, 61, 6],
+              "type": [1],
+              "typeNot": [2, 3, 7, 8],
+              "steamPerc": { "min": 65, "max": 100 }
+            }
+          }
+        ]
+      },
+      "es-es": {
+        "daily_payloads": [
+          {
+            "query-key": "es_daily_budget_historical_low",
+            "sort": null,
+            "pages": 1,
+            "nondeals": true,
+            "gids": [],
+            "filter": {
+              "price": { "min": 0, "max": 5 },
+              "cut": { "min": 90, "max": 100 },
+              "flag": "H",
+              "drm": [61, 16, 35],
+              "type": [1],
+              "typeNot": [2, 3, 7, 8],
+              "steamPerc": { "min": 27, "max": 100 },
+              "metaCritic": { "min": 17, "max": 100 },
+              "metaUser": { "min": 29, "max": 100 },
+              "openCritic": { "min": 25, "max": 100 },
+              "shops": [61, 6, 16, 35, 37, 52]
+            }
+          },
+          {
+            "query-key": "es_daily_store_low_multi_store_quality",
+            "sort": null,
+            "pages": 1,
+            "nondeals": true,
+            "gids": [],
+            "filter": {
+              "flag": "S",
+              "cut": { "min": 75, "max": 100 },
+              "metaUser": { "min": 70, "max": 100 },
+              "metaCritic": { "min": 70, "max": 100 },
+              "steamPerc": { "min": 70, "max": 100 },
+              "steamCount": { "min": 500, "max": null },
+              "drm": [61, 16, 35],
+              "type": [1],
+              "typeNot": [2, 3, 7, 8],
+              "shops": [61, 6, 16, 35, 37, 52]
+            }
+          }
+        ],
+        "hourly_payloads": [
+          {
+            "query-key": "es_hourly_free_games_multi_store",
+            "sort": null,
+            "pages": 1,
+            "nondeals": true,
+            "gids": [],
+            "filter": {
+              "price": { "min": 0, "max": 0 },
+              "regular": { "min": 5, "max": null },
+              "flag": "H",
+              "shops": [16, 35, 37, 61, 6],
+              "type": [1],
+              "typeNot": [2, 3, 7, 8],
+              "steamPerc": { "min": 65, "max": 100 }
+            }
+          }
+        ]
+      },
+      "es-mx": {
+        "daily_payloads": [
+          {
+            "query-key": "mx_daily_under_5_historical_low",
+            "sort": null,
+            "pages": 1,
+            "nondeals": true,
+            "gids": [],
+            "filter": {
+              "price": { "min": 0, "max": 5 },
+              "cut": { "min": 90, "max": 100 },
+              "flag": "H",
+              "drm": [61, 16, 35],
+              "type": [1],
+              "typeNot": [2, 3, 7, 8],
+              "steamPerc": { "min": 27, "max": 100 },
+              "metaCritic": { "min": 17, "max": 100 },
+              "metaUser": { "min": 29, "max": 100 },
+              "openCritic": { "min": 25, "max": 100 },
+              "shops": [61, 6, 16, 35, 37, 52]
+            }
+          },
+          {
+            "query-key": "mx_daily_store_low_multi_store_quality",
+            "sort": null,
+            "pages": 1,
+            "nondeals": true,
+            "gids": [],
+            "filter": {
+              "flag": "S",
+              "cut": { "min": 75, "max": 100 },
+              "metaUser": { "min": 70, "max": 100 },
+              "metaCritic": { "min": 70, "max": 100 },
+              "steamPerc": { "min": 70, "max": 100 },
+              "steamCount": { "min": 500, "max": null },
+              "drm": [61, 16, 35],
+              "type": [1],
+              "typeNot": [2, 3, 7, 8],
+              "shops": [61, 6, 16, 35, 37, 52]
+            }
+          }
+        ],
+        "hourly_payloads": [
+          {
+            "query-key": "mx_hourly_free_games_multi_store",
+            "sort": null,
+            "pages": 1,
+            "nondeals": true,
+            "gids": [],
+            "filter": {
+              "price": { "min": 0, "max": 0 },
+              "regular": { "min": 5, "max": null },
+              "flag": "H",
+              "shops": [16, 35, 37, 61, 6],
+              "type": [1],
+              "typeNot": [2, 3, 7, 8],
+              "steamPerc": { "min": 65, "max": 100 }
+            }
+          }
+        ]
+      }
+    }
   }
 }

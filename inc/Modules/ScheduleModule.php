@@ -27,6 +27,12 @@ use Throwable;
 
 class ScheduleModule extends AbstractModule
 {
+	private const DAILY_MARKET_HOOK = 'agdc_run_daily_market';
+	private const HOURLY_MARKET_HOOK = 'agdc_run_hourly_market';
+	private const DAILY_MARKET_STAGGER_SECONDS = 8 * MINUTE_IN_SECONDS;
+	private const HOURLY_MARKET_STAGGER_SECONDS = 5 * MINUTE_IN_SECONDS;
+	private const MANUAL_MARKET_PAUSE_MICROSECONDS = 1500000;
+
 	private RuntimeStateRepository $runtimeStateRepository;
 	private OfferSelectionService $offerSelectionService;
 
@@ -51,23 +57,50 @@ class ScheduleModule extends AbstractModule
 		$this->runtimeStateRepository->markRunStart('daily');
 
 		try {
-			$selection_summary = [];
-			$game_informations = $this->fetchGameInformations('daily', $selection_summary);
-			if (!$game_informations) {
-				$this->runtimeStateRepository->markRunSuccess('daily', array_merge(['items' => 0], $selection_summary));
+			$repo = new MarketTargetRepository();
+			$targets = $repo->getRolloutTargets();
+
+			if ($this->shouldQueueMarkets($targets)) {
+				$queued = $this->queueMarketRuns(self::DAILY_MARKET_HOOK, $targets, self::DAILY_MARKET_STAGGER_SECONDS);
+				$this->runtimeStateRepository->markRunSuccess(
+					'daily',
+					[
+						'note' => 'queued_markets',
+						'queued' => count($queued),
+						'markets' => $queued,
+					]
+				);
 				return;
 			}
 
-			$wordpress_functions = new WordPressFunctions();
-			$date                = new Date();
-			$utility_factory     = new UtilityFactory();
-			$market_target       = (new MarketTargetRepository())->getDefaultTarget();
-			$daily_strategy      = new DailyPostStrategy($game_informations, $wordpress_functions, $date, $utility_factory, $market_target);
-			(new Poster($daily_strategy))->post();
-			$this->runtimeStateRepository->markRunSuccess('daily', array_merge(['items' => count($game_informations)], $selection_summary));
+			$summary = $this->runDailyTargets($targets, true);
+			$this->runtimeStateRepository->markRunSuccess('daily', $summary);
 		} catch (Throwable $throwable) {
 			$this->runtimeStateRepository->markRunFailure('daily', $throwable->getMessage());
 			error_log('AGDC daily task failed: ' . $throwable->getMessage());
+		}
+	}
+
+	public function runDailyMarketTask(string $marketKey): void
+	{
+		if ($marketKey === '') {
+			return;
+		}
+
+		if (!$this->isAutomationEnabled()) {
+			return;
+		}
+
+		try {
+			$repo = new MarketTargetRepository();
+			$target = $repo->findByKey($marketKey);
+			if ($target === null) {
+				return;
+			}
+
+			$this->runDailyTargets([$target], false);
+		} catch (Throwable $throwable) {
+			error_log('AGDC daily market task failed for ' . $marketKey . ': ' . $throwable->getMessage());
 		}
 	}
 
@@ -87,26 +120,50 @@ class ScheduleModule extends AbstractModule
 		$this->runtimeStateRepository->markRunStart('hourly');
 
 		try {
-			$selection_summary = [];
-			$game_informations   = $this->fetchGameInformations('hourly', $selection_summary);
-			$wordpress_functions = new WordPressFunctions();
-			$utility_factory     = new UtilityFactory();
-			$market_target       = (new MarketTargetRepository())->getDefaultTarget();
-			if ($game_informations) {
-				foreach ($game_informations as $index => $game_information) {
-					$free_games_post_strategy = new FreeGamesPostStrategy(
-						$game_information,
-						$utility_factory,
-						$wordpress_functions,
-						$market_target
-					);
-					(new Poster($free_games_post_strategy))->post();
-				}
+			$repo = new MarketTargetRepository();
+			$targets = $repo->getRolloutTargets();
+
+			if ($this->shouldQueueMarkets($targets)) {
+				$queued = $this->queueMarketRuns(self::HOURLY_MARKET_HOOK, $targets, self::HOURLY_MARKET_STAGGER_SECONDS);
+				$this->runtimeStateRepository->markRunSuccess(
+					'hourly',
+					[
+						'note' => 'queued_markets',
+						'queued' => count($queued),
+						'markets' => $queued,
+					]
+				);
+				return;
 			}
-			$this->runtimeStateRepository->markRunSuccess('hourly', array_merge(['items' => count($game_informations)], $selection_summary));
+
+			$summary = $this->runHourlyTargets($targets, true);
+			$this->runtimeStateRepository->markRunSuccess('hourly', $summary);
 		} catch (Throwable $throwable) {
 			$this->runtimeStateRepository->markRunFailure('hourly', $throwable->getMessage());
 			error_log('AGDC hourly task failed: ' . $throwable->getMessage());
+		}
+	}
+
+	public function runHourlyMarketTask(string $marketKey): void
+	{
+		if ($marketKey === '') {
+			return;
+		}
+
+		if (!$this->isAutomationEnabled()) {
+			return;
+		}
+
+		try {
+			$repo = new MarketTargetRepository();
+			$target = $repo->findByKey($marketKey);
+			if ($target === null) {
+				return;
+			}
+
+			$this->runHourlyTargets([$target], false);
+		} catch (Throwable $throwable) {
+			error_log('AGDC hourly market task failed for ' . $marketKey . ': ' . $throwable->getMessage());
 		}
 	}
 
@@ -118,17 +175,110 @@ class ScheduleModule extends AbstractModule
 			$timestamp = strtotime('06:00:00');
 		}
 
+		$this->wpFunctions->addHook(self::DAILY_MARKET_HOOK, 'runDailyMarketTask', 10, 1);
+		$this->wpFunctions->addHook(self::HOURLY_MARKET_HOOK, 'runHourlyMarketTask', 10, 1);
 		$this->wpFunctions->scheduleEvent('startScheduleHourlyPost', 'hourly', 'startHourlyPostTask');
 		$this->wpFunctions->scheduleEvent('startDailyPostTask', 'daily', 'startDailyPostTask', $timestamp);
+	}
+
+	private function runDailyTargets(array $targets, bool $pauseBetweenMarkets): array
+	{
+		$summary = ['items' => 0, 'markets' => []];
+		$wordpressFunctions = new WordPressFunctions();
+		$date = new Date();
+		$utilityFactory = new UtilityFactory();
+
+		foreach ($targets as $index => $marketTarget) {
+			$selectionSummary = [];
+			$gameInformations = $this->fetchGameInformations('daily', $selectionSummary, $marketTarget);
+			$summary['items'] += count($gameInformations);
+			$summary['markets'][(string) ($marketTarget['market_key'] ?? 'unknown')] = array_merge(
+				['items' => count($gameInformations)],
+				$selectionSummary
+			);
+
+			if ($gameInformations !== []) {
+				$dailyStrategy = new DailyPostStrategy($gameInformations, $wordpressFunctions, $date, $utilityFactory, $marketTarget);
+				(new Poster($dailyStrategy))->post();
+			}
+
+			if ($pauseBetweenMarkets && $index < count($targets) - 1) {
+				usleep(self::MANUAL_MARKET_PAUSE_MICROSECONDS);
+			}
+		}
+
+		return $summary;
+	}
+
+	private function runHourlyTargets(array $targets, bool $pauseBetweenMarkets): array
+	{
+		$summary = ['items' => 0, 'markets' => []];
+		$wordpressFunctions = new WordPressFunctions();
+		$utilityFactory = new UtilityFactory();
+
+		foreach ($targets as $index => $marketTarget) {
+			$selectionSummary = [];
+			$gameInformations = $this->fetchGameInformations('hourly', $selectionSummary, $marketTarget);
+			$summary['items'] += count($gameInformations);
+			$summary['markets'][(string) ($marketTarget['market_key'] ?? 'unknown')] = array_merge(
+				['items' => count($gameInformations)],
+				$selectionSummary
+			);
+
+			if ($gameInformations !== []) {
+				foreach ($gameInformations as $gameInformation) {
+					$freeGamesPostStrategy = new FreeGamesPostStrategy(
+						$gameInformation,
+						$utilityFactory,
+						$wordpressFunctions,
+						$marketTarget
+					);
+					(new Poster($freeGamesPostStrategy))->post();
+				}
+			}
+
+			if ($pauseBetweenMarkets && $index < count($targets) - 1) {
+				usleep(self::MANUAL_MARKET_PAUSE_MICROSECONDS);
+			}
+		}
+
+		return $summary;
+	}
+
+	private function shouldQueueMarkets(array $targets): bool
+	{
+		return defined('DOING_CRON') && DOING_CRON && count($targets) > 1;
+	}
+
+	private function queueMarketRuns(string $hook, array $targets, int $staggerSeconds): array
+	{
+		$queued = [];
+		$timestamp = time();
+
+		foreach ($targets as $index => $target) {
+			$marketKey = (string) ($target['market_key'] ?? '');
+			if ($marketKey === '') {
+				continue;
+			}
+
+			$args = [$marketKey];
+			if (!wp_next_scheduled($hook, $args)) {
+				wp_schedule_single_event($timestamp + ($index * $staggerSeconds), $hook, $args);
+			}
+
+			$queued[] = $marketKey;
+		}
+
+		return $queued;
 	}
 
 	/**
 	 * @return array
 	 * @throws GuzzleException
 	 */
-	private function fetchGameInformations($fetchType = 'daily', array &$selectionSummary = []): array
+	private function fetchGameInformations($fetchType = 'daily', array &$selectionSummary = [], ?array $marketTarget = null): array
 	{
-		$game_informations = (new Scraper($fetchType))->getOffers();
+		$game_informations = (new Scraper($fetchType, $marketTarget))->getOffers();
 		if (!$game_informations) {
 			$selectionSummary = [
 				'found' => 0,
@@ -140,7 +290,7 @@ class ScheduleModule extends AbstractModule
 			return [];
 		}
 
-		$database = new GameInformationDatabase();
+		$database = new GameInformationDatabase($marketTarget);
 		foreach ($game_informations as $index => $game_information) {
 			$game_informations[$index] = $database->insertGameInformation($game_information);
 		}

@@ -153,6 +153,11 @@ class DailyPostStrategy implements PostTypeStrategy
 
 	public function getPostSlug(): string
 	{
+		$slug = sanitize_title($this->getPostTitle());
+		if ($slug !== '') {
+			return $slug;
+		}
+
 		return sanitize_title(
 			sprintf(
 				'%s-%s-%s-game-deals',

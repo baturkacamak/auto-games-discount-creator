@@ -35,7 +35,8 @@ class OfferSelectionService
 			return $summary;
 		}
 
-		$posted_offer_ids = $this->getPostedOfferIds(array_column($offers, 'offer_id'), 'discount_roundup');
+		$marketTargetId = $this->extractMarketTargetId($offers);
+		$posted_offer_ids = $this->getPostedOfferIds(array_column($offers, 'offer_id'), 'discount_roundup', $marketTargetId);
 		$summary['already_posted'] = count(
 			array_filter(
 				$offers,
@@ -76,7 +77,8 @@ class OfferSelectionService
 			return [];
 		}
 
-		$posted_offer_ids = $this->getPostedOfferIds(array_column($offers, 'offer_id'), 'discount_roundup');
+		$marketTargetId = $this->extractMarketTargetId($offers);
+		$posted_offer_ids = $this->getPostedOfferIds(array_column($offers, 'offer_id'), 'discount_roundup', $marketTargetId);
 		$offers = array_values(
 			array_filter(
 				$offers,
@@ -141,7 +143,8 @@ class OfferSelectionService
 			return $summary;
 		}
 
-		$posted_offer_ids = $this->getPostedOfferIds(array_column($offers, 'offer_id'), 'free_game');
+		$marketTargetId = $this->extractMarketTargetId($offers);
+		$posted_offer_ids = $this->getPostedOfferIds(array_column($offers, 'offer_id'), 'free_game', $marketTargetId);
 		$summary['already_posted'] = count(
 			array_filter(
 				$offers,
@@ -181,7 +184,8 @@ class OfferSelectionService
 			return [];
 		}
 
-		$posted_offer_ids = $this->getPostedOfferIds(array_column($offers, 'offer_id'), 'free_game');
+		$marketTargetId = $this->extractMarketTargetId($offers);
+		$posted_offer_ids = $this->getPostedOfferIds(array_column($offers, 'offer_id'), 'free_game', $marketTargetId);
 		$seen_games = [];
 		$selected = [];
 
@@ -204,7 +208,7 @@ class OfferSelectionService
 		return $selected;
 	}
 
-	private function getPostedOfferIds(array $offerIds, string $contentKind): array
+	private function getPostedOfferIds(array $offerIds, string $contentKind, ?int $marketTargetId = null): array
 	{
 		global $wpdb;
 
@@ -221,14 +225,33 @@ class OfferSelectionService
 
 		$placeholders = implode(', ', array_fill(0, count($offer_ids), '%d'));
 		$table = $wpdb->prefix . 'agdc_generated_posts';
-		$query = $wpdb->prepare(
-			"SELECT DISTINCT offer_id FROM {$table} WHERE content_kind = %s AND offer_id IN ({$placeholders})",
-			array_merge([$contentKind], $offer_ids)
-		);
+		if ($marketTargetId !== null && $marketTargetId > 0) {
+			$query = $wpdb->prepare(
+				"SELECT DISTINCT offer_id FROM {$table} WHERE content_kind = %s AND market_target_id = %d AND offer_id IN ({$placeholders})",
+				array_merge([$contentKind, $marketTargetId], $offer_ids)
+			);
+		} else {
+			$query = $wpdb->prepare(
+				"SELECT DISTINCT offer_id FROM {$table} WHERE content_kind = %s AND offer_id IN ({$placeholders})",
+				array_merge([$contentKind], $offer_ids)
+			);
+		}
 
 		$results = $wpdb->get_col($query);
 
 		return array_map('intval', is_array($results) ? $results : []);
+	}
+
+	private function extractMarketTargetId(array $offers): ?int
+	{
+		foreach ($offers as $offer) {
+			$marketTargetId = (int) ($offer['market_target_id'] ?? 0);
+			if ($marketTargetId > 0) {
+				return $marketTargetId;
+			}
+		}
+
+		return null;
 	}
 
 	private function getGameGroupKey(array $offer): string

@@ -286,14 +286,21 @@ class SetupModule extends AbstractModule
 				'site_section' => 'es',
 			],
 			[
-				'market_key' => 'us-en',
+				'market_key' => 'es-mx',
+				'country_code' => 'MX',
+				'language_code' => 'es',
+				'default_currency_code' => 'MXN',
+				'site_section' => 'es-mx',
+			],
+			[
+				'market_key' => 'en-us',
 				'country_code' => 'US',
 				'language_code' => 'en',
 				'default_currency_code' => 'USD',
 				'site_section' => 'en-us',
 			],
 			[
-				'market_key' => 'gb-en',
+				'market_key' => 'en-gb',
 				'country_code' => 'GB',
 				'language_code' => 'en',
 				'default_currency_code' => 'GBP',

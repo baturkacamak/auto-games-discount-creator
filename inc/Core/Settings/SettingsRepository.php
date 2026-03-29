@@ -72,6 +72,7 @@ class SettingsRepository
 				],
 				'data_model' => [
 					'default_market_target_key' => 'tr-tr',
+					'rollout_market_target_keys' => ['tr-tr', 'en-gb', 'en-us', 'es-es', 'es-mx'],
 					'default_discount_store_key' => 'steam',
 					'default_free_store_key' => 'epic',
 				],
@@ -83,6 +84,7 @@ class SettingsRepository
 					'itad_currency_code' => 'TRY',
 					'daily_payloads' => [],
 					'hourly_payloads' => [],
+					'market_payloads' => [],
 				],
 				'queries' => [],
 			]

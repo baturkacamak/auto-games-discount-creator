@@ -2,6 +2,7 @@
 
 namespace AutoGamesDiscountCreator\Post;
 
+use AutoGamesDiscountCreator\Core\Integration\WpmlSupport;
 use AutoGamesDiscountCreator\Core\Settings\SettingsRepository;
 use AutoGamesDiscountCreator\Core\Utility\Database;
 use AutoGamesDiscountCreator\Core\Utility\UtilityFactory;
@@ -140,6 +141,11 @@ if (!class_exists('AutoGamesDiscountCreator\Post\Poster')) {
 				update_post_meta($post_id, '_agdc_language_code', (string) ($market_target['language_code'] ?? ''));
 				update_post_meta($post_id, '_agdc_site_section', (string) ($market_target['site_section'] ?? ''));
 				update_post_meta($post_id, '_agdc_content_kind', $this->postTypeStrategy->getContentKind());
+				(new WpmlSupport())->assignPostLanguage(
+					(int) $post_id,
+					(string) $post_type,
+					(string) ($market_target['market_key'] ?? ($market_target['language_code'] ?? ''))
+				);
 				if ($this->postTypeStrategy instanceof DailyPostStrategy && is_array($snapshot_payload)) {
 					update_post_meta($post_id, '_agdc_snapshot_payload', $snapshot_payload);
 				}

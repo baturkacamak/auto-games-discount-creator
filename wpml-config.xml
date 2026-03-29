@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<wpml-config>
+  <custom-types>
+    <custom-type translate="1">agdc_roundup</custom-type>
+  </custom-types>
+  <custom-fields>
+    <custom-field action="copy">_agdc_content_kind</custom-field>
+    <custom-field action="copy">_agdc_snapshot_payload</custom-field>
+  </custom-fields>
+</wpml-config>

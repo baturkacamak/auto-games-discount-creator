@@ -14,10 +14,12 @@ use Exception;
 class GameInformationDatabase
 {
 	private GameTitleNormalizer $gameTitleNormalizer;
+	private array $marketTarget;
 
-	public function __construct()
+	public function __construct(?array $marketTarget = null)
 	{
 		$this->gameTitleNormalizer = new GameTitleNormalizer();
+		$this->marketTarget = $marketTarget ?? [];
 	}
 
 	/**
@@ -37,6 +39,7 @@ class GameInformationDatabase
 
 			$gameInfo['offer_id'] = (int) ($offer_record['id'] ?? 0);
 			$gameInfo['game_id'] = (int) ($game_record['id'] ?? 0);
+			$gameInfo['market_target_id'] = (int) ($offer_record['market_target_id'] ?? 0);
 
 			return $gameInfo;
 		}
@@ -124,7 +127,7 @@ class GameInformationDatabase
 
 		$table = $wpdb->prefix . 'agdc_offers';
 		$settings = (new SettingsRepository())->getAll();
-		$market_target = $this->resolveMarketTarget((string) ($settings['data_model']['default_market_target_key'] ?? 'tr-tr'));
+		$market_target = $this->marketTarget ?: $this->resolveMarketTarget((string) ($settings['data_model']['default_market_target_key'] ?? 'tr-tr'));
 		$store_key = $this->resolveStoreKey($gameInfo, $settings);
 		$store_id = $this->resolveStoreId($store_key);
 		$is_free = $this->isFreeOffer($gameInfo);
@@ -144,9 +147,10 @@ class GameInformationDatabase
 		if ($external_offer_id !== '') {
 			$existing_record = $wpdb->get_row(
 				$wpdb->prepare(
-					"SELECT * FROM {$table} WHERE game_id = %d AND store_id = %d AND external_offer_id = %s LIMIT 1",
+					"SELECT * FROM {$table} WHERE game_id = %d AND store_id = %d AND market_target_id = %d AND external_offer_id = %s LIMIT 1",
 					(int) $gameRecord['id'],
 					$store_id,
+					isset($market_target['id']) ? (int) $market_target['id'] : 0,
 					$external_offer_id
 				),
 				ARRAY_A
@@ -156,9 +160,10 @@ class GameInformationDatabase
 		if (!$existing_record) {
 			$existing_record = $wpdb->get_row(
 				$wpdb->prepare(
-					"SELECT * FROM {$table} WHERE game_id = %d AND store_id = %d AND deeplink_url = %s LIMIT 1",
+					"SELECT * FROM {$table} WHERE game_id = %d AND store_id = %d AND market_target_id = %d AND deeplink_url = %s LIMIT 1",
 					(int) $gameRecord['id'],
 					$store_id,
+					isset($market_target['id']) ? (int) $market_target['id'] : 0,
 					(string) ($gameInfo['url'] ?? '')
 				),
 				ARRAY_A

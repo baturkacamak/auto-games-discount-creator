@@ -15,6 +15,9 @@ class RoundupModule extends AbstractModule
 		$this->wpFunctions->addHook('the_content', 'renderRoundupContent', 20);
 		$this->wpFunctions->addHook('request', 'mapRoundupRequest');
 		$this->wpFunctions->addHook('post_type_link', 'filterRoundupPermalink', 10, 2);
+		$this->wpFunctions->addHook('pre_get_document_title', 'filterRoundupDocumentTitle', 20);
+		$this->wpFunctions->addHook('document_title_parts', 'filterRoundupDocumentTitleParts');
+		$this->wpFunctions->addHook('wp_head', 'renderRoundupHeadMeta');
 	}
 
 	public function registerRoundupPostType(): void
@@ -38,7 +41,14 @@ class RoundupModule extends AbstractModule
 			]
 		);
 
-		// Support root-level roundup URLs like /tr-2026-03-28-game-deals/.
+		// Support WPML-style market-prefixed roundup URLs like /tr-tr/28-mart-2026-oyun-indirimleri/.
+		add_rewrite_rule(
+			'^([a-z]{2}-[a-z]{2})/([^/]+)/?$',
+			'index.php?lang=$matches[1]&agdc_roundup=$matches[2]&post_type=agdc_roundup',
+			'top'
+		);
+
+		// Legacy support for previous root-level roundup URLs.
 		add_rewrite_rule(
 			'^([a-z]{2}(?:-[a-z]{2})?-\d{4}-\d{2}-\d{2}-game-deals)/?$',
 			'index.php?agdc_roundup=$matches[1]',
@@ -48,7 +58,7 @@ class RoundupModule extends AbstractModule
 
 	public function renderRoundupContent(string $content): string
 	{
-		if (is_admin() || !is_singular('agdc_roundup') || !in_the_loop() || !is_main_query()) {
+		if (is_admin() || !is_singular('agdc_roundup')) {
 			return $content;
 		}
 
@@ -110,6 +120,11 @@ class RoundupModule extends AbstractModule
 		unset($queryVars['pagename']);
 		$queryVars['agdc_roundup'] = get_post_field('post_name', $postId);
 		$queryVars['post_type'] = 'agdc_roundup';
+		$marketKey = (string) get_post_meta($postId, '_agdc_market_key', true);
+		if ($marketKey !== '') {
+			$queryVars['lang'] = $marketKey;
+			do_action('wpml_switch_language', $marketKey);
+		}
 
 		return $queryVars;
 	}
@@ -120,7 +135,86 @@ class RoundupModule extends AbstractModule
 			return $postLink;
 		}
 
-		return home_url(user_trailingslashit($post->post_name));
+		$marketKey = (string) get_post_meta($post->ID, '_agdc_market_key', true);
+		if ($marketKey === '') {
+			$marketKey = 'tr-tr';
+		}
+
+		return home_url(user_trailingslashit($marketKey . '/' . $post->post_name));
+	}
+
+	public function filterRoundupDocumentTitle(string $title): string
+	{
+		$postId = $this->getCurrentRoundupPostId();
+		if ($postId <= 0) {
+			return $title;
+		}
+
+		$postTitle = get_the_title($postId);
+		if (!is_string($postTitle) || $postTitle === '') {
+			return $title;
+		}
+
+		return $postTitle;
+	}
+
+	public function filterRoundupDocumentTitleParts(array $parts): array
+	{
+		$postId = $this->getCurrentRoundupPostId();
+		if ($postId <= 0) {
+			return $parts;
+		}
+
+		$postTitle = get_the_title($postId);
+		if (!is_string($postTitle) || $postTitle === '') {
+			return $parts;
+		}
+
+		$parts['title'] = $postTitle;
+		$parts['site'] = '';
+		$parts['tagline'] = '';
+
+		return $parts;
+	}
+
+	public function renderRoundupHeadMeta(): void
+	{
+		$postId = $this->getCurrentRoundupPostId();
+		if ($postId <= 0) {
+			return;
+		}
+
+		$snapshot = get_post_meta($postId, '_agdc_snapshot_payload', true);
+		if (!is_array($snapshot)) {
+			return;
+		}
+
+		$marketKey = (string) get_post_meta($postId, '_agdc_market_key', true);
+		$repo = new MarketTargetRepository();
+		$marketTarget = $marketKey !== '' ? ($repo->findByKey($marketKey) ?: $repo->getDefaultTarget()) : $repo->getDefaultTarget();
+		$copySet = $repo->getCopySet($marketTarget);
+		$description = $this->buildRoundupDescription($snapshot, $copySet);
+		$canonical = get_permalink($postId);
+
+		if (is_string($description) && $description !== '') {
+			echo '<meta name="description" content="' . esc_attr($description) . '">' . "\n";
+			echo '<meta property="og:description" content="' . esc_attr($description) . '">' . "\n";
+			echo '<meta name="twitter:description" content="' . esc_attr($description) . '">' . "\n";
+		}
+
+		if (is_string($canonical) && $canonical !== '') {
+			echo '<link rel="canonical" href="' . esc_url($canonical) . '">' . "\n";
+			echo '<meta property="og:url" content="' . esc_url($canonical) . '">' . "\n";
+		}
+
+		echo '<meta property="og:type" content="article">' . "\n";
+		echo '<meta property="og:title" content="' . esc_attr(get_the_title($postId)) . '">' . "\n";
+		echo '<meta property="og:site_name" content="' . esc_attr(get_bloginfo('name')) . '">' . "\n";
+		echo '<meta name="twitter:title" content="' . esc_attr(get_the_title($postId)) . '">' . "\n";
+
+		foreach ($this->getRoundupAlternateLinks($postId) as $alternate) {
+			echo '<link rel="alternate" hreflang="' . esc_attr($alternate['hreflang']) . '" href="' . esc_url($alternate['url']) . '">' . "\n";
+		}
 	}
 
 	private function enrichSnapshotImages(array $snapshot): array
@@ -163,5 +257,95 @@ class RoundupModule extends AbstractModule
 		$snapshot['games'] = $games;
 
 		return $snapshot;
+	}
+
+	private function buildRoundupDescription(array $snapshot, array $copySet): string
+	{
+		$games = is_array($snapshot['games'] ?? null) ? $snapshot['games'] : [];
+		$count = count($games);
+		if ($count === 0) {
+			return '';
+		}
+
+		$currency = strtoupper((string) ($games[0]['currency_code'] ?? 'USD'));
+		$language = strtolower((string) ($copySet['hreflang'] ?? 'en-us'));
+
+		if (str_starts_with($language, 'tr')) {
+			return sprintf('%d oyun indirimi. Fiyatlar %s bazında gösteriliyor.', $count, $currency);
+		}
+
+		if (str_starts_with($language, 'es')) {
+			return sprintf('%d ofertas de juegos para hoy. Los precios se muestran en %s.', $count, $currency);
+		}
+
+		if (str_starts_with($language, 'ro')) {
+			return sprintf('%d oferte de jocuri pentru astăzi. Prețurile sunt afișate în %s.', $count, $currency);
+		}
+
+		return sprintf('%d PC game deals for today. Prices are shown in %s.', $count, $currency);
+	}
+
+	private function getRoundupAlternateLinks(int $postId): array
+	{
+		global $wpdb;
+
+		$iclTable = $wpdb->prefix . 'icl_translations';
+		$current = $wpdb->get_row(
+			$wpdb->prepare("SELECT trid FROM {$iclTable} WHERE element_id = %d LIMIT 1", $postId),
+			ARRAY_A
+		);
+
+		if (!is_array($current) || empty($current['trid'])) {
+			return [];
+		}
+
+		$translations = $wpdb->get_results(
+			$wpdb->prepare("SELECT element_id, language_code FROM {$iclTable} WHERE trid = %d", (int) $current['trid']),
+			ARRAY_A
+		);
+
+		$alternates = [];
+		foreach ($translations as $translation) {
+			$translatedPostId = (int) ($translation['element_id'] ?? 0);
+			if ($translatedPostId <= 0) {
+				continue;
+			}
+
+			$url = get_permalink($translatedPostId);
+			$hreflang = strtolower((string) ($translation['language_code'] ?? ''));
+			if (!is_string($url) || $url === '' || $hreflang === '') {
+				continue;
+			}
+
+			$alternates[] = [
+				'hreflang' => $hreflang,
+				'url' => $url,
+			];
+		}
+
+		return $alternates;
+	}
+
+	private function getCurrentRoundupPostId(): int
+	{
+		$postId = (int) get_queried_object_id();
+		if ($postId > 0 && get_post_type($postId) === 'agdc_roundup') {
+			return $postId;
+		}
+
+		global $post;
+		if (is_object($post) && isset($post->ID) && get_post_type((int) $post->ID) === 'agdc_roundup') {
+			return (int) $post->ID;
+		}
+
+		$slug = get_query_var('agdc_roundup');
+		if (is_string($slug) && $slug !== '') {
+			$roundup = get_page_by_path($slug, OBJECT, 'agdc_roundup');
+			if (is_object($roundup) && isset($roundup->ID)) {
+				return (int) $roundup->ID;
+			}
+		}
+
+		return 0;
 	}
 }

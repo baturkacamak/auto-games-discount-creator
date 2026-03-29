@@ -2,14 +2,54 @@
 
 namespace AutoGamesDiscountCreator\Core\Settings;
 
+use AutoGamesDiscountCreator\Core\Integration\WpmlSupport;
+
 class MarketTargetRepository
 {
 	public function getDefaultTarget(): array
 	{
+		$currentTarget = $this->getCurrentTarget();
+		if ($currentTarget !== null) {
+			return $currentTarget;
+		}
+
 		$settings = (new SettingsRepository())->getAll();
 		$market_key = (string) ($settings['data_model']['default_market_target_key'] ?? 'tr-tr');
 
 		return $this->findByKey($market_key) ?? $this->getFallbackTarget($market_key);
+	}
+
+	public function getCurrentTarget(): ?array
+	{
+		$wpmlLanguageCode = (new WpmlSupport())->getCurrentLanguageCode();
+		if ($wpmlLanguageCode === '') {
+			return null;
+		}
+
+		return $this->findByLanguageCode($wpmlLanguageCode);
+	}
+
+	public function getRolloutTargets(): array
+	{
+		$settings = (new SettingsRepository())->getAll();
+		$keys = $settings['data_model']['rollout_market_target_keys'] ?? [];
+		if (!is_array($keys) || $keys === []) {
+			return [$this->getDefaultTarget()];
+		}
+
+		$targets = [];
+		foreach ($keys as $key) {
+			if (!is_string($key) || $key === '') {
+				continue;
+			}
+
+			$target = $this->findByKey($key);
+			if ($target !== null) {
+				$targets[] = $target;
+			}
+		}
+
+		return $targets !== [] ? $targets : [$this->getDefaultTarget()];
 	}
 
 	public function findByKey(string $marketKey): ?array
@@ -29,6 +69,42 @@ class MarketTargetRepository
 		return $this->decorateTarget($target);
 	}
 
+	public function findByLanguageCode(string $languageCode): ?array
+	{
+		$languageCode = $this->normalizeLanguageCode($languageCode);
+		if ($languageCode === '') {
+			return null;
+		}
+
+		$exactTarget = $this->findByKey($languageCode);
+		if ($exactTarget !== null) {
+			return $exactTarget;
+		}
+
+		$parts = explode('-', $languageCode);
+		if (count($parts) === 2) {
+			$language = strtolower((string) ($parts[0] ?? ''));
+			$country = strtoupper((string) ($parts[1] ?? ''));
+
+			global $wpdb;
+			$table = $wpdb->prefix . 'agdc_market_targets';
+			$target = $wpdb->get_row(
+				$wpdb->prepare(
+					"SELECT * FROM {$table} WHERE language_code = %s AND country_code = %s LIMIT 1",
+					$language,
+					$country
+				),
+				ARRAY_A
+			);
+
+			if (is_array($target)) {
+				return $this->decorateTarget($target);
+			}
+		}
+
+		return null;
+	}
+
 	public function getCopySet(array $target): array
 	{
 		$language = strtolower((string) ($target['language_code'] ?? 'en'));
@@ -41,6 +117,9 @@ class MarketTargetRepository
 				'discount_intro' => 'Bugün alınmaya değer toplam %d oyun var.',
 				'featured_label' => 'Günün Oyunu',
 				'featured_reason_label' => 'Neden öne çıktı',
+				'featured_discount_phrase' => 'indirim',
+				'featured_score_phrase' => 'güçlü puan ortalaması',
+				'featured_price_phrase' => 'bugünkü fiyat',
 				'free_intro' => 'Ücretsiz oyun %s',
 				'price_label' => 'Fiyatı',
 				'regular_price_label' => 'Eski Fiyat',
@@ -60,6 +139,9 @@ class MarketTargetRepository
 				'discount_intro' => 'There are %d games worth grabbing today.',
 				'featured_label' => 'Featured Pick',
 				'featured_reason_label' => 'Why it stands out',
+				'featured_discount_phrase' => 'discount',
+				'featured_score_phrase' => 'strong review profile',
+				'featured_price_phrase' => 'today at',
 				'free_intro' => 'Free game: %s',
 				'price_label' => 'Price',
 				'regular_price_label' => 'Regular Price',
@@ -77,12 +159,21 @@ class MarketTargetRepository
 				'discount_title' => '%1$s %2$s %3$s Reduceri la Jocuri',
 				'free_title' => 'Joc Gratuit // %1$s // %2$s %3$s %4$s',
 				'discount_intro' => 'Astăzi există %d jocuri care merită cumpărate.',
+				'featured_label' => 'Alegerea Zilei',
+				'featured_reason_label' => 'De ce iese în evidență',
+				'featured_discount_phrase' => 'reducere',
+				'featured_score_phrase' => 'profil puternic de review-uri',
+				'featured_price_phrase' => 'prețul de azi',
 				'free_intro' => 'Joc gratuit: %s',
 				'price_label' => 'Preț',
 				'regular_price_label' => 'Preț normal',
 				'discount_label' => 'Reducere',
 				'store_label' => 'Magazin',
 				'cta_label' => 'Deschide pagina',
+				'meta_score_label' => 'Metacritic',
+				'user_score_label' => 'Metacritic User',
+				'opencritic_score_label' => 'OpenCritic',
+				'steam_rating_label' => 'Steam Reviews',
 				'free_price_label' => 'GRATUIT',
 				'month_names' => [1 => 'Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie', 'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'],
 			],
@@ -90,12 +181,21 @@ class MarketTargetRepository
 				'discount_title' => 'Ofertas de Juegos %1$s %2$s %3$s',
 				'free_title' => 'Juego Gratis // %1$s // %2$s %3$s %4$s',
 				'discount_intro' => 'Hoy hay %d juegos que merecen la pena.',
+				'featured_label' => 'Juego Destacado',
+				'featured_reason_label' => 'Por qué destaca',
+				'featured_discount_phrase' => 'de descuento',
+				'featured_score_phrase' => 'perfil sólido de valoraciones',
+				'featured_price_phrase' => 'precio de hoy',
 				'free_intro' => 'Juego gratis: %s',
 				'price_label' => 'Precio',
 				'regular_price_label' => 'Precio normal',
 				'discount_label' => 'Descuento',
 				'store_label' => 'Tienda',
 				'cta_label' => 'Abrir oferta',
+				'meta_score_label' => 'Metacritic',
+				'user_score_label' => 'Metacritic User',
+				'opencritic_score_label' => 'OpenCritic',
+				'steam_rating_label' => 'Steam Reviews',
 				'free_price_label' => 'GRATIS',
 				'month_names' => [1 => 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
 			],
@@ -128,6 +228,17 @@ class MarketTargetRepository
 		];
 
 		$copy = $copies[$language] ?? $copies['en'];
+
+		if ($language === 'en' && $country === 'US') {
+			$copy['discount_title'] = '%2$s %1$s %3$s Game Deals';
+			$copy['free_title'] = 'Free Game // %1$s // %3$s %2$s %4$s';
+		}
+
+		if ($language === 'es' && $country === 'MX') {
+			$copy['discount_title'] = 'Ofertas de Juegos del %1$s de %2$s de %3$s';
+			$copy['free_title'] = 'Juego Gratis // %1$s // %2$s de %3$s de %4$s';
+		}
+
 		$copy['hreflang'] = strtolower($language . '-' . $country);
 
 		return $copy;
@@ -164,5 +275,15 @@ class MarketTargetRepository
 				'site_section' => $language,
 			]
 		);
+	}
+
+	private function normalizeLanguageCode(string $languageCode): string
+	{
+		$languageCode = strtolower(trim($languageCode));
+		if ($languageCode === '') {
+			return '';
+		}
+
+		return str_replace('_', '-', $languageCode);
 	}
 }

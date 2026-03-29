@@ -25,6 +25,9 @@ class DailyRoundupSnapshotRenderer
 		$ctaLabel = $copySet['cta_label'] ?? 'Open Store Page';
 		$featuredLabel = $copySet['featured_label'] ?? 'Featured Pick';
 		$featuredReasonLabel = $copySet['featured_reason_label'] ?? 'Why it stands out';
+		$featuredDiscountPhrase = $copySet['featured_discount_phrase'] ?? 'discount';
+		$featuredScorePhrase = $copySet['featured_score_phrase'] ?? 'strong review profile';
+		$featuredPricePhrase = $copySet['featured_price_phrase'] ?? 'today at';
 		$metaScoreLabel = $copySet['meta_score_label'] ?? 'Metacritic';
 		$userScoreLabel = $copySet['user_score_label'] ?? 'User Score';
 		$opencriticLabel = $copySet['opencritic_score_label'] ?? 'OpenCritic';
@@ -43,6 +46,9 @@ class DailyRoundupSnapshotRenderer
 				$discountLabel,
 				$storeLabel,
 				$ctaLabel,
+				$featuredDiscountPhrase,
+				$featuredScorePhrase,
+				$featuredPricePhrase,
 				$metaScoreLabel,
 				$userScoreLabel,
 				$opencriticLabel,
@@ -239,6 +245,9 @@ class DailyRoundupSnapshotRenderer
 		string $discountLabel,
 		string $storeLabel,
 		string $ctaLabel,
+		string $featuredDiscountPhrase,
+		string $featuredScorePhrase,
+		string $featuredPricePhrase,
 		string $metaScoreLabel,
 		string $userScoreLabel,
 		string $opencriticLabel,
@@ -256,7 +265,7 @@ class DailyRoundupSnapshotRenderer
 		$html .= '<div class="agdc-featured__eyebrow">' . esc_html($featuredLabel) . '</div>';
 		$html .= '<a class="agdc-featured__title" href="' . esc_url((string) $game['url']) . '" target="_blank" rel="noopener">' . esc_html((string) ($game['name'] ?? '')) . '</a>';
 		$html .= '<div class="agdc-featured__reason"><strong>' . esc_html($featuredReasonLabel) . ':</strong> ';
-		$html .= esc_html($this->buildFeaturedReason($game)) . '</div>';
+		$html .= esc_html($this->buildFeaturedReason($game, $featuredDiscountPhrase, $featuredScorePhrase, $featuredPricePhrase)) . '</div>';
 		$html .= '<div class="agdc-featured__stats">';
 		$html .= '<div>' . esc_html($priceLabel) . ': <strong>' . esc_html($this->formatPrice($game['price'] ?? 0, (string) ($game['currency_code'] ?? 'USD'))) . '</strong></div>';
 		if (!empty($game['regular_price'])) {
@@ -275,12 +284,17 @@ class DailyRoundupSnapshotRenderer
 		return $html;
 	}
 
-	private function buildFeaturedReason(array $game): string
+	private function buildFeaturedReason(
+		array $game,
+		string $featuredDiscountPhrase,
+		string $featuredScorePhrase,
+		string $featuredPricePhrase
+	): string
 	{
 		$parts = [];
 
 		if (!empty($game['cut'])) {
-			$parts[] = '%' . $this->formatScore((float) $game['cut']) . ' indirim';
+			$parts[] = '%' . $this->formatScore((float) $game['cut']) . ' ' . trim($featuredDiscountPhrase);
 		}
 
 		$bestReview = max(
@@ -290,11 +304,11 @@ class DailyRoundupSnapshotRenderer
 			(float) ($game['user_score'] ?? 0)
 		);
 		if ($bestReview > 0) {
-			$parts[] = 'güçlü puan ortalaması (' . $this->formatScore($bestReview) . ')';
+			$parts[] = trim($featuredScorePhrase) . ' (' . $this->formatScore($bestReview) . ')';
 		}
 
 		if (!empty($game['price'])) {
-			$parts[] = 'bugünkü fiyat ' . $this->formatPrice((float) $game['price'], (string) ($game['currency_code'] ?? 'USD'));
+			$parts[] = trim($featuredPricePhrase) . ' ' . $this->formatPrice((float) $game['price'], (string) ($game['currency_code'] ?? 'USD'));
 		}
 
 		return implode(', ', $parts);

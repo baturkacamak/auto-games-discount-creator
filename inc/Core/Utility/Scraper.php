@@ -17,6 +17,7 @@ if (!class_exists('AutoGamesDiscountCreator\Core\Utility\Scraper')) {
 		private WordPressFunctions $wpFunctions;
 		private WebClient $guzzle;
 		private string $type;
+		private array $marketTarget;
 		private array $resolvedUrlCache = [];
 		private GameTitleNormalizer $gameTitleNormalizer;
 
@@ -25,12 +26,14 @@ if (!class_exists('AutoGamesDiscountCreator\Core\Utility\Scraper')) {
 		private const GAMES_ENDPOINT = 'deals/api/games/';
 		private const PRICES_ENDPOINT = 'deals/api/prices/';
 
-		public function __construct(string $type = 'daily')
+		public function __construct(string $type = 'daily', ?array $marketTarget = null)
 		{
 			$this->type        = $type;
 			$this->settings    = AutoGamesDiscountCreator::getInstance()->settings;
 			$this->wpFunctions = new WordPressFunctions($this);
 			$this->gameTitleNormalizer = new GameTitleNormalizer();
+			$this->marketTarget = $marketTarget ?? [];
+			$this->applyMarketTargetOverrides();
 			$this->setGuzzle();
 		}
 
@@ -39,10 +42,11 @@ if (!class_exists('AutoGamesDiscountCreator\Core\Utility\Scraper')) {
 			$offers = [];
 			$payloads = $this->getPayloadsForType();
 			$transient_time = $this->type === 'hourly' ? HOUR_IN_SECONDS : DAY_IN_SECONDS / 4;
+			$marketKey = (string) ($this->marketTarget['market_key'] ?? $this->settings['data_model']['default_market_target_key'] ?? 'tr-tr');
 
 			foreach ($payloads as $index => $payload) {
 				$query_key = (string) ($payload['query-key'] ?? ($this->type . '_payload_' . $index));
-				$transient_key = 'agdc_source_' . $query_key;
+				$transient_key = 'agdc_source_' . md5($marketKey . '|' . $query_key);
 				$transient_data = $this->wpFunctions->getTransient($transient_key);
 
 				if (!$transient_data) {
@@ -56,6 +60,28 @@ if (!class_exists('AutoGamesDiscountCreator\Core\Utility\Scraper')) {
 			}
 
 			return $offers;
+		}
+
+		private function applyMarketTargetOverrides(): void
+		{
+			if ($this->marketTarget === []) {
+				return;
+			}
+
+			$marketKey = (string) ($this->marketTarget['market_key'] ?? '');
+			if ($marketKey !== '') {
+				$this->settings['data_model']['default_market_target_key'] = $marketKey;
+			}
+
+			$countryCode = strtoupper((string) ($this->marketTarget['country_code'] ?? ''));
+			if ($countryCode !== '') {
+				$this->settings['source']['itad_country_code'] = $countryCode;
+			}
+
+			$currencyCode = strtoupper((string) ($this->marketTarget['default_currency_code'] ?? ''));
+			if ($currencyCode !== '') {
+				$this->settings['source']['itad_currency_code'] = $currencyCode;
+			}
 		}
 
 		private function setGuzzle(): void
@@ -122,7 +148,7 @@ if (!class_exists('AutoGamesDiscountCreator\Core\Utility\Scraper')) {
 
 		private function hydrateSourceSettingsFromTransient(array $source_settings): array
 		{
-			$cached = $this->wpFunctions->getTransient(self::SESSION_TRANSIENT_KEY);
+			$cached = $this->wpFunctions->getTransient($this->getSessionTransientKey());
 			if (!is_array($cached)) {
 				return $source_settings;
 			}
@@ -138,10 +164,11 @@ if (!class_exists('AutoGamesDiscountCreator\Core\Utility\Scraper')) {
 
 		private function bootstrapAnonymousSession(array $source_settings): array
 		{
+			$countryCode = strtoupper((string) ($source_settings['itad_country_code'] ?? 'TR'));
 			$temp_client = new WebClient(
 				[
 					'base_uri' => self::BASE_URL . '/',
-					'cookies' => new CookieJar(),
+					'cookies' => CookieJar::fromArray(['country' => $countryCode], parse_url(self::BASE_URL, PHP_URL_HOST)),
 					'headers' => [
 						'Accept-Language' => 'en-US,en;q=0.9,tr;q=0.8',
 						'User-Agent' => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0',
@@ -190,9 +217,15 @@ if (!class_exists('AutoGamesDiscountCreator\Core\Utility\Scraper')) {
 				]
 			);
 
-			$this->wpFunctions->setTransient(self::SESSION_TRANSIENT_KEY, $bootstrapped, 6 * HOUR_IN_SECONDS);
+			$this->wpFunctions->setTransient($this->getSessionTransientKey(), $bootstrapped, 6 * HOUR_IN_SECONDS);
 
 			return $bootstrapped;
+		}
+
+		private function getSessionTransientKey(): string
+		{
+			$marketKey = (string) ($this->marketTarget['market_key'] ?? $this->settings['data_model']['default_market_target_key'] ?? 'tr-tr');
+			return self::SESSION_TRANSIENT_KEY . '_' . sanitize_key($marketKey);
 		}
 
 		private function extractSessionTokenFromHtml(string $html): string
@@ -231,7 +264,19 @@ if (!class_exists('AutoGamesDiscountCreator\Core\Utility\Scraper')) {
 		private function getPayloadsForType(): array
 		{
 			$key = $this->type === 'hourly' ? 'hourly_payloads' : 'daily_payloads';
-			$payloads = $this->settings['source'][$key] ?? [];
+			$marketKey = (string) ($this->marketTarget['market_key'] ?? $this->settings['data_model']['default_market_target_key'] ?? '');
+			$marketPayloads = $this->settings['source']['market_payloads'] ?? [];
+
+			if (
+				$marketKey !== ''
+				&& is_array($marketPayloads)
+				&& isset($marketPayloads[$marketKey][$key])
+				&& is_array($marketPayloads[$marketKey][$key])
+			) {
+				$payloads = $marketPayloads[$marketKey][$key];
+			} else {
+				$payloads = $this->settings['source'][$key] ?? [];
+			}
 
 			return is_array($payloads) ? $payloads : [];
 		}
@@ -507,9 +552,13 @@ if (!class_exists('AutoGamesDiscountCreator\Core\Utility\Scraper')) {
 
 		private function resolveLanguageCodeForCurrentSettings(): string
 		{
+			if (!empty($this->marketTarget['language_code'])) {
+				return (string) $this->marketTarget['language_code'];
+			}
+
 			$market_key = (string) ($this->settings['data_model']['default_market_target_key'] ?? 'tr-tr');
 			$parts = explode('-', $market_key);
-			return $parts[1] ?? 'tr';
+			return $parts[0] ?? 'tr';
 		}
 
 		private function resolveThumbnailUrl(array $gameMeta, array $priceMeta): string
