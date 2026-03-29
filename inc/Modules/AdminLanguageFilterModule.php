@@ -83,7 +83,7 @@ class AdminLanguageFilterModule extends AbstractModule
 
 		$postType = $this->getPostTypeForQuery($query);
 
-		return in_array($postType, ['post', 'agdc_roundup'], true);
+		return $postType === 'agdc_roundup';
 	}
 
 	private function getQueryLanguageCode(WP_Query $query): string
@@ -114,7 +114,7 @@ class AdminLanguageFilterModule extends AbstractModule
 
 		return isset($_GET['post_type']) && is_string($_GET['post_type'])
 			? sanitize_key(wp_unslash($_GET['post_type']))
-			: 'post';
+			: 'agdc_roundup';
 	}
 
 	private function getElementTypeForQuery(WP_Query $query): string

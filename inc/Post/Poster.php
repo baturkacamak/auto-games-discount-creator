@@ -104,7 +104,7 @@ if (!class_exists('AutoGamesDiscountCreator\Post\Poster')) {
 
 			$market_target = $this->postTypeStrategy->getMarketTarget();
 			$post_slug = $this->postTypeStrategy->getPostSlug();
-			$post_type = $this->postTypeStrategy->getContentKind() === 'discount_roundup' ? 'agdc_roundup' : 'post';
+			$post_type = 'agdc_roundup';
 			$snapshot_payload = null;
 			$post_content = $this->postTypeStrategy->getPostContent($game_data);
 			if ($this->postTypeStrategy instanceof DailyPostStrategy) {

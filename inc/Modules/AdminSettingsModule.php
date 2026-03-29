@@ -506,7 +506,7 @@ class AdminSettingsModule extends AbstractModule
 
 		$posts = get_posts(
 			[
-				'post_type' => 'post',
+				'post_type' => 'agdc_roundup',
 				'post_status' => 'draft',
 				'numberposts' => -1,
 				'meta_query' => [

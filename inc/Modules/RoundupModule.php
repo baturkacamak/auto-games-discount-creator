@@ -15,6 +15,8 @@ class RoundupModule extends AbstractModule
 		$this->wpFunctions->addHook('the_content', 'renderRoundupContent', 20);
 		$this->wpFunctions->addHook('request', 'mapRoundupRequest');
 		$this->wpFunctions->addHook('post_type_link', 'filterRoundupPermalink', 10, 2);
+		$this->wpFunctions->addHook('admin_menu', 'hideDefaultPostsMenu', 999);
+		$this->wpFunctions->addHook('admin_init', 'redirectDefaultPostScreens');
 	}
 
 	public function registerRoundupPostType(): void
@@ -141,6 +143,28 @@ class RoundupModule extends AbstractModule
 		}
 
 		return home_url(user_trailingslashit($marketKey . '/' . $post->post_name));
+	}
+
+	public function hideDefaultPostsMenu(): void
+	{
+		remove_menu_page('edit.php');
+	}
+
+	public function redirectDefaultPostScreens(): void
+	{
+		if (!is_admin() || wp_doing_ajax()) {
+			return;
+		}
+
+		global $pagenow;
+
+		$isPostList = $pagenow === 'edit.php' && (!isset($_GET['post_type']) || sanitize_key((string) wp_unslash($_GET['post_type'])) === 'post');
+		$isPostNew = $pagenow === 'post-new.php' && (!isset($_GET['post_type']) || sanitize_key((string) wp_unslash($_GET['post_type'])) === 'post');
+
+		if ($isPostList || $isPostNew) {
+			wp_safe_redirect(admin_url('edit.php?post_type=agdc_roundup'));
+			exit;
+		}
 	}
 
 	private function enrichSnapshotImages(array $snapshot): array

@@ -165,7 +165,7 @@ class SeoModule extends AbstractModule
 
 	private function getSeoTargetPostId(): int
 	{
-		if (is_singular('agdc_roundup') || (is_singular('post') && get_post_meta(get_queried_object_id(), '_agdc_content_kind', true) === 'free_game')) {
+		if (is_singular('agdc_roundup')) {
 			return (int) get_queried_object_id();
 		}
 
@@ -232,7 +232,7 @@ class SeoModule extends AbstractModule
 			}
 		}
 
-		if ($post->post_type === 'post' && get_post_meta($post->ID, '_agdc_content_kind', true) === 'free_game') {
+		if ($post->post_type === 'agdc_roundup' && get_post_meta($post->ID, '_agdc_content_kind', true) === 'free_game') {
 			$graph[] = [
 				'@context' => 'https://schema.org',
 				'@type' => 'BlogPosting',
@@ -275,7 +275,7 @@ class SeoModule extends AbstractModule
 		$marketTarget = $marketKey !== '' ? ($repo->findByKey($marketKey) ?: $repo->getDefaultTarget()) : $repo->getDefaultTarget();
 		$copySet = $repo->getCopySet($marketTarget);
 
-		if ($post->post_type === 'agdc_roundup') {
+		if ($post->post_type === 'agdc_roundup' && get_post_meta($post->ID, '_agdc_content_kind', true) !== 'free_game') {
 			$snapshot = get_post_meta($post->ID, '_agdc_snapshot_payload', true);
 			$description = is_array($snapshot) ? $this->buildRoundupDescription($snapshot, $copySet, $marketTarget) : '';
 			$image = is_array($snapshot) ? $this->getRoundupImage($snapshot) : '';
@@ -289,7 +289,7 @@ class SeoModule extends AbstractModule
 			];
 		}
 
-		if ($post->post_type === 'post' && get_post_meta($post->ID, '_agdc_content_kind', true) === 'free_game') {
+		if ($post->post_type === 'agdc_roundup' && get_post_meta($post->ID, '_agdc_content_kind', true) === 'free_game') {
 			$description = $this->buildFreeGameDescription($post, $copySet, $marketTarget);
 			$image = $this->getFreeGameImage($post);
 
@@ -567,6 +567,15 @@ class SeoModule extends AbstractModule
 				'name' => get_the_title($post),
 				'url' => $canonical,
 			];
+			if (get_post_meta($post->ID, '_agdc_content_kind', true) === 'free_game') {
+				$categories = get_the_category($post->ID);
+				if (!empty($categories) && isset($categories[0]) && $categories[0] instanceof \WP_Term) {
+					array_splice($items, 1, 0, [[
+						'name' => $categories[0]->name,
+						'url' => get_term_link($categories[0]),
+					]]);
+				}
+			}
 		} elseif ($post->post_type === 'post') {
 			$categories = get_the_category($post->ID);
 			if (!empty($categories) && isset($categories[0]) && $categories[0] instanceof \WP_Term) {
