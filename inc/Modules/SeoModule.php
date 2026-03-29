@@ -3,7 +3,6 @@
 namespace AutoGamesDiscountCreator\Modules;
 
 use AutoGamesDiscountCreator\Core\Module\AbstractModule;
-use AutoGamesDiscountCreator\Core\Seo\MarketLocalizedRoundupsSitemapProvider;
 use AutoGamesDiscountCreator\Core\Settings\MarketTargetRepository;
 
 class SeoModule extends AbstractModule
@@ -16,16 +15,7 @@ class SeoModule extends AbstractModule
 		$this->wpFunctions->addHook('wp_head', 'renderHeadMeta', 1);
 		$this->wpFunctions->addHook('wp_head', 'renderSchema', 20);
 		$this->wpFunctions->addHook('wp_robots', 'filterRobots');
-		$this->wpFunctions->addHook('template_redirect', 'redirectRootSitemapRequests', 0);
-		$this->wpFunctions->addHook('wp_sitemaps_init', 'registerSitemapProvider');
-		$this->wpFunctions->addHook('wp_sitemaps_post_types', 'filterSitemapPostTypes');
-		$this->wpFunctions->addHook('wp_sitemaps_taxonomies', 'filterSitemapTaxonomies');
-		$this->wpFunctions->addHook('wp_sitemaps_add_provider', 'filterSitemapProviders', 10, 2);
-		$this->wpFunctions->addHook('wp_sitemaps_posts_entry', 'filterSitemapPostEntry', 10, 3);
-		$this->wpFunctions->addHook('request', 'mapSitemapRequest');
-		$this->wpFunctions->addHook('redirect_canonical', 'filterCanonicalRedirect', 10, 2);
 		$this->wpFunctions->addHook('wpml_hreflangs_html', 'filterWpmlHreflangsHtml');
-		$this->wpFunctions->addHook('robots_txt', 'filterRobotsTxt', 20, 2);
 	}
 
 	public function filterDocumentTitle(string $title): string
@@ -150,205 +140,9 @@ class SeoModule extends AbstractModule
 		return $robots;
 	}
 
-	public function registerSitemapProvider($wpSitemaps = null): void
-	{
-		if (is_object($wpSitemaps) && isset($wpSitemaps->registry) && method_exists($wpSitemaps->registry, 'add_provider')) {
-			$wpSitemaps->registry->add_provider('marketroundups', new MarketLocalizedRoundupsSitemapProvider());
-			return;
-		}
-
-		if (!function_exists('wp_register_sitemap_provider')) {
-			return;
-		}
-
-		wp_register_sitemap_provider('marketroundups', new MarketLocalizedRoundupsSitemapProvider());
-	}
-
-	public function filterSitemapPostTypes(array $postTypes): array
-	{
-		unset($postTypes['agdc_roundup']);
-
-		return $postTypes;
-	}
-
-	public function filterSitemapTaxonomies(array $taxonomies): array
-	{
-		unset($taxonomies['post_tag']);
-
-		return $taxonomies;
-	}
-
-	public function filterSitemapProviders($provider, string $name)
-	{
-		if ($name === 'users') {
-			return false;
-		}
-
-		return $provider;
-	}
-
 	public function filterWpmlHreflangsHtml(string $html): string
 	{
 		return $this->getSeoTargetPostId() > 0 ? '' : $html;
-	}
-
-	public function filterSitemapPostEntry(array $entry, \WP_Post $post, string $postType): array
-	{
-		if ($postType !== 'agdc_roundup') {
-			return $entry;
-		}
-
-		$customUrl = $this->buildAlternateUrl($post);
-		if ($customUrl !== '') {
-			$entry['loc'] = $customUrl;
-		}
-
-		return $entry;
-	}
-
-	public function filterCanonicalRedirect($redirectUrl, string $requestedUrl)
-	{
-		$path = (string) parse_url($requestedUrl, PHP_URL_PATH);
-		if (str_contains($path, 'wp-sitemap')) {
-			return false;
-		}
-
-		return $redirectUrl;
-	}
-
-	public function mapSitemapRequest(array $queryVars): array
-	{
-		if (is_admin()) {
-			return $queryVars;
-		}
-
-		$repo = new MarketTargetRepository();
-		$defaultTarget = $repo->getDefaultTarget();
-		$defaultMarketKey = strtolower((string) ($defaultTarget['market_key'] ?? 'tr-tr'));
-
-		$requestPath = isset($_SERVER['REQUEST_URI']) ? (string) wp_parse_url(wp_unslash($_SERVER['REQUEST_URI']), PHP_URL_PATH) : '';
-		$requestPath = trim($requestPath, '/');
-		if ($requestPath === '') {
-			return $queryVars;
-		}
-
-		$languagePrefix = '';
-		if (preg_match('#^([a-z]{2}-[a-z]{2})/(.+)$#i', $requestPath, $languageMatches) === 1) {
-			$languagePrefix = strtolower((string) ($languageMatches[1] ?? ''));
-			$requestPath = (string) ($languageMatches[2] ?? '');
-			if ($languagePrefix !== '') {
-				$queryVars['lang'] = $languagePrefix;
-				do_action('wpml_switch_language', $languagePrefix);
-			}
-		}
-
-		if ($requestPath === 'wp-sitemap.xml') {
-			unset($queryVars['pagename'], $queryVars['name']);
-			if ($defaultMarketKey !== '') {
-				$queryVars['lang'] = $defaultMarketKey;
-				do_action('wpml_switch_language', $defaultMarketKey);
-			}
-			$queryVars['sitemap'] = 'index';
-
-			return $queryVars;
-		}
-
-		if ($requestPath === 'wp-sitemap.xsl') {
-			unset($queryVars['pagename'], $queryVars['name']);
-			if ($defaultMarketKey !== '') {
-				$queryVars['lang'] = $defaultMarketKey;
-				do_action('wpml_switch_language', $defaultMarketKey);
-			}
-			$queryVars['sitemap-stylesheet'] = 'sitemap';
-
-			return $queryVars;
-		}
-
-		if ($requestPath === 'wp-sitemap-index.xsl') {
-			unset($queryVars['pagename'], $queryVars['name']);
-			if ($defaultMarketKey !== '') {
-				$queryVars['lang'] = $defaultMarketKey;
-				do_action('wpml_switch_language', $defaultMarketKey);
-			}
-			$queryVars['sitemap-stylesheet'] = 'index';
-
-			return $queryVars;
-		}
-
-		if (preg_match('#^wp-sitemap-([a-z]+)-([a-z0-9_-]+)-([0-9]+)\.xml$#i', $requestPath, $matches) === 1) {
-			unset($queryVars['pagename'], $queryVars['name']);
-			$queryVars['sitemap'] = strtolower((string) ($matches[1] ?? ''));
-			$queryVars['sitemap-subtype'] = strtolower((string) ($matches[2] ?? ''));
-			$queryVars['paged'] = (int) ($matches[3] ?? 1);
-
-			return $queryVars;
-		}
-
-		if (preg_match('#^wp-sitemap-([a-z]+)-([0-9]+)\.xml$#i', $requestPath, $matches) === 1) {
-			unset($queryVars['pagename'], $queryVars['name']);
-			$queryVars['sitemap'] = strtolower((string) ($matches[1] ?? ''));
-			$queryVars['paged'] = (int) ($matches[2] ?? 1);
-
-			return $queryVars;
-		}
-
-		return $queryVars;
-	}
-
-	public function filterRobotsTxt(string $output, bool $public): string
-	{
-		$repo = new MarketTargetRepository();
-		$defaultTarget = $repo->getDefaultTarget();
-		$defaultMarketKey = strtolower((string) ($defaultTarget['market_key'] ?? 'tr-tr'));
-		$sitemapUrl = untrailingslashit((string) get_option('home')) . '/wp-sitemap.xml';
-
-		if ($defaultMarketKey !== '') {
-			$sitemapUrl = untrailingslashit((string) get_option('home')) . '/' . $defaultMarketKey . '/wp-sitemap.xml';
-		}
-
-		$lines = preg_split('/\r\n|\r|\n/', trim($output)) ?: [];
-		$filtered = [];
-
-		foreach ($lines as $line) {
-			if (stripos($line, 'Sitemap:') === 0) {
-				continue;
-			}
-
-			$filtered[] = rtrim($line);
-		}
-
-		$filtered[] = '';
-		$filtered[] = 'Sitemap: ' . $sitemapUrl;
-
-		return trim(implode("\n", array_filter($filtered, static fn($line) => $line !== null))) . "\n";
-	}
-
-	public function redirectRootSitemapRequests(): void
-	{
-		if (is_admin()) {
-			return;
-		}
-
-		$requestPath = isset($_SERVER['REQUEST_URI']) ? (string) wp_parse_url(wp_unslash($_SERVER['REQUEST_URI']), PHP_URL_PATH) : '';
-		$requestPath = trim($requestPath, '/');
-		if (!in_array($requestPath, ['wp-sitemap.xml', 'wp-sitemap.xsl', 'wp-sitemap-index.xsl'], true)) {
-			return;
-		}
-
-		$repo = new MarketTargetRepository();
-		$defaultTarget = $repo->getDefaultTarget();
-		$defaultMarketKey = strtolower((string) ($defaultTarget['market_key'] ?? 'tr-tr'));
-		if ($defaultMarketKey === '') {
-			return;
-		}
-
-		$targetUrl = home_url('/' . $defaultMarketKey . '/' . $requestPath);
-		if ($targetUrl === home_url('/' . $requestPath)) {
-			return;
-		}
-
-		wp_safe_redirect($targetUrl, 301);
-		exit;
 	}
 
 	private function getSeoTargetPostId(): int
