@@ -18,6 +18,7 @@ class SeoModule extends AbstractModule
 		$this->wpFunctions->addHook('wp_sitemaps_taxonomies', 'filterSitemapTaxonomies');
 		$this->wpFunctions->addHook('wp_sitemaps_add_provider', 'filterSitemapProviders', 10, 2);
 		$this->wpFunctions->addHook('wpml_hreflangs_html', 'filterWpmlHreflangsHtml');
+		$this->wpFunctions->addHook('robots_txt', 'filterRobotsTxt', 20, 2);
 	}
 
 	public function filterDocumentTitle(string $title): string
@@ -161,6 +162,25 @@ class SeoModule extends AbstractModule
 	public function filterWpmlHreflangsHtml(string $html): string
 	{
 		return $this->getSeoTargetPostId() > 0 ? '' : $html;
+	}
+
+	public function filterRobotsTxt(string $output, bool $public): string
+	{
+		$lines = preg_split('/\r\n|\r|\n/', trim($output)) ?: [];
+		$filtered = [];
+
+		foreach ($lines as $line) {
+			if (stripos($line, 'Sitemap:') === 0) {
+				continue;
+			}
+
+			$filtered[] = rtrim($line);
+		}
+
+		$filtered[] = '';
+		$filtered[] = 'Sitemap: ' . home_url('/wp-sitemap-posts-agdc_roundup-1.xml');
+
+		return trim(implode("\n", array_filter($filtered, static fn($line) => $line !== null))) . "\n";
 	}
 
 	private function getSeoTargetPostId(): int
