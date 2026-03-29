@@ -128,7 +128,7 @@ if (!function_exists('agdcMissingDependenciesNotice')) {
 	}
 }
 
-if (!class_exists('Medoo\\Medoo') || !class_exists('GuzzleHttp\\Client') || !class_exists('Philo\\Blade\\Blade')) {
+if (!class_exists('Medoo\\Medoo') || !class_exists('GuzzleHttp\\Client')) {
 	add_action('admin_notices', 'agdcMissingDependenciesNotice');
 
 	return;
