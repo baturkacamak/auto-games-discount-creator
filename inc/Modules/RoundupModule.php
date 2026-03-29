@@ -115,8 +115,11 @@ class RoundupModule extends AbstractModule
 
 		unset($queryVars['name']);
 		unset($queryVars['pagename']);
+		$queryVars['name'] = get_post_field('post_name', $postId);
 		$queryVars['agdc_roundup'] = get_post_field('post_name', $postId);
 		$queryVars['post_type'] = 'agdc_roundup';
+		$queryVars['page'] = '';
+		$queryVars['attachment'] = '';
 		$marketKey = (string) get_post_meta($postId, '_agdc_market_key', true);
 		if ($marketKey !== '') {
 			$queryVars['lang'] = $marketKey;

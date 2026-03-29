@@ -16,6 +16,7 @@ class SeoModule extends AbstractModule
 		$this->wpFunctions->addHook('wp_robots', 'filterRobots');
 		$this->wpFunctions->addHook('wp_sitemaps_taxonomies', 'filterSitemapTaxonomies');
 		$this->wpFunctions->addHook('wp_sitemaps_add_provider', 'filterSitemapProviders', 10, 2);
+		$this->wpFunctions->addHook('wpml_hreflangs_html', 'filterWpmlHreflangsHtml');
 	}
 
 	public function filterDocumentTitle(string $title): string
@@ -154,6 +155,11 @@ class SeoModule extends AbstractModule
 		}
 
 		return $provider;
+	}
+
+	public function filterWpmlHreflangsHtml(string $html): string
+	{
+		return $this->getSeoTargetPostId() > 0 ? '' : $html;
 	}
 
 	private function getSeoTargetPostId(): int
@@ -367,6 +373,13 @@ class SeoModule extends AbstractModule
 			}
 		}
 
+		if (preg_match('/<img[^>]+src=["\']([^"\']+)["\']/i', (string) $post->post_content, $matches) === 1) {
+			$image = (string) ($matches[1] ?? '');
+			if ($image !== '') {
+				return $image;
+			}
+		}
+
 		return '';
 	}
 
@@ -397,7 +410,12 @@ class SeoModule extends AbstractModule
 				continue;
 			}
 
-			$url = get_permalink((int) $translation->element_id);
+			$translatedPost = get_post((int) $translation->element_id);
+			if (!$translatedPost instanceof \WP_Post) {
+				continue;
+			}
+
+			$url = $this->buildAlternateUrl($translatedPost);
 			if (!is_string($url) || $url === '') {
 				continue;
 			}
@@ -409,6 +427,29 @@ class SeoModule extends AbstractModule
 		}
 
 		return $alternates;
+	}
+
+	private function buildAlternateUrl(\WP_Post $post): string
+	{
+		$baseUrl = untrailingslashit((string) get_option('home'));
+		$marketKey = (string) get_post_meta($post->ID, '_agdc_market_key', true);
+		if ($marketKey === '') {
+			$marketKey = strtolower((string) get_post_meta($post->ID, '_agdc_language_code', true));
+		}
+
+		if ($baseUrl === '') {
+			$baseUrl = untrailingslashit((string) site_url());
+		}
+
+		if ($post->post_type === 'agdc_roundup' && $marketKey !== '') {
+			return $baseUrl . '/' . user_trailingslashit($marketKey . '/' . $post->post_name);
+		}
+
+		if ($marketKey !== '') {
+			return $baseUrl . '/' . user_trailingslashit($marketKey . '/' . $post->post_name);
+		}
+
+		return (string) get_permalink($post);
 	}
 
 	private function buildBreadcrumbSchema(\WP_Post $post, string $canonical): ?array
