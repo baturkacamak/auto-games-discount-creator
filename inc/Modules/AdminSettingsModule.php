@@ -89,31 +89,15 @@ class AdminSettingsModule extends AbstractModule
 
 		add_settings_field(
 			'agdc_author_id',
-			__('Post author ID', 'auto-games-discount-creator'),
+			__('Default post author', 'auto-games-discount-creator'),
 			[$this, 'renderAuthorField'],
 			'auto-games-discount-creator',
 			'agdc_posting_section'
 		);
 
 		add_settings_field(
-			'agdc_category_id',
-			__('Post category ID', 'auto-games-discount-creator'),
-			[$this, 'renderCategoryField'],
-			'auto-games-discount-creator',
-			'agdc_posting_section'
-		);
-
-		add_settings_field(
-			'agdc_tags',
-			__('Post tags/excerpt suffix', 'auto-games-discount-creator'),
-			[$this, 'renderTagsField'],
-			'auto-games-discount-creator',
-			'agdc_posting_section'
-		);
-
-		add_settings_field(
 			'agdc_post_status',
-			__('Post status', 'auto-games-discount-creator'),
+			__('Default post status', 'auto-games-discount-creator'),
 			[$this, 'renderPostStatusField'],
 			'auto-games-discount-creator',
 			'agdc_posting_section'
@@ -136,31 +120,15 @@ class AdminSettingsModule extends AbstractModule
 
 		add_settings_field(
 			'agdc_daily_author_id',
-			__('Daily post author', 'auto-games-discount-creator'),
+			__('Daily roundup author', 'auto-games-discount-creator'),
 			[$this, 'renderDailyAuthorField'],
 			'auto-games-discount-creator',
 			'agdc_daily_posting_section'
 		);
 
 		add_settings_field(
-			'agdc_daily_category_id',
-			__('Daily post category', 'auto-games-discount-creator'),
-			[$this, 'renderDailyCategoryField'],
-			'auto-games-discount-creator',
-			'agdc_daily_posting_section'
-		);
-
-		add_settings_field(
-			'agdc_daily_tags',
-			__('Daily tags/excerpt suffix', 'auto-games-discount-creator'),
-			[$this, 'renderDailyTagsField'],
-			'auto-games-discount-creator',
-			'agdc_daily_posting_section'
-		);
-
-		add_settings_field(
 			'agdc_daily_post_status',
-			__('Daily post status', 'auto-games-discount-creator'),
+			__('Daily roundup status', 'auto-games-discount-creator'),
 			[$this, 'renderDailyPostStatusField'],
 			'auto-games-discount-creator',
 			'agdc_daily_posting_section'
@@ -175,31 +143,15 @@ class AdminSettingsModule extends AbstractModule
 
 		add_settings_field(
 			'agdc_free_author_id',
-			__('Free-game post author', 'auto-games-discount-creator'),
+			__('Free-game author', 'auto-games-discount-creator'),
 			[$this, 'renderFreeAuthorField'],
 			'auto-games-discount-creator',
 			'agdc_free_posting_section'
 		);
 
 		add_settings_field(
-			'agdc_free_category_id',
-			__('Free-game post category', 'auto-games-discount-creator'),
-			[$this, 'renderFreeCategoryField'],
-			'auto-games-discount-creator',
-			'agdc_free_posting_section'
-		);
-
-		add_settings_field(
-			'agdc_free_tags',
-			__('Free-game tags/excerpt suffix', 'auto-games-discount-creator'),
-			[$this, 'renderFreeTagsField'],
-			'auto-games-discount-creator',
-			'agdc_free_posting_section'
-		);
-
-		add_settings_field(
 			'agdc_free_post_status',
-			__('Free-game post status', 'auto-games-discount-creator'),
+			__('Free-game status', 'auto-games-discount-creator'),
 			[$this, 'renderFreePostStatusField'],
 			'auto-games-discount-creator',
 			'agdc_free_posting_section'
@@ -613,19 +565,19 @@ class AdminSettingsModule extends AbstractModule
 	public function renderPostingSection(): void
 	{
 		echo '<span id="agdc_posting_section-title"></span>';
-		echo '<p>' . esc_html__('Global WordPress posting defaults. In the current market-first flow, taxonomy naming is generated automatically per market/language; author and status are the most important values here.', 'auto-games-discount-creator') . '</p>';
+		echo '<p>' . esc_html__('Global WordPress posting defaults. Taxonomy is generated automatically per market/language, so this section only keeps the shared author, status and daily schedule controls.', 'auto-games-discount-creator') . '</p>';
 	}
 
 	public function renderDailyPostingSection(): void
 	{
 		echo '<span id="agdc_daily_posting_section-title"></span>';
-		echo '<p>' . esc_html__('Overrides used only for daily roundup posts. Category and tags here are now mostly legacy fallbacks because localized taxonomy is assigned automatically from the market target.', 'auto-games-discount-creator') . '</p>';
+		echo '<p>' . esc_html__('Overrides used only for daily roundup posts. Localized category and tag terms are created automatically from the market target, so only author and status stay editable here.', 'auto-games-discount-creator') . '</p>';
 	}
 
 	public function renderFreePostingSection(): void
 	{
 		echo '<span id="agdc_free_posting_section-title"></span>';
-		echo '<p>' . esc_html__('Overrides used only for free-game posts. Category and tags here are now mostly legacy fallbacks because localized taxonomy is assigned automatically from the market target.', 'auto-games-discount-creator') . '</p>';
+		echo '<p>' . esc_html__('Overrides used only for free-game posts. Localized category and tag terms are created automatically from the market target, so only author and status stay editable here.', 'auto-games-discount-creator') . '</p>';
 	}
 
 	public function renderDataModelSection(): void
