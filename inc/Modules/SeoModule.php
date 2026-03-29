@@ -12,6 +12,10 @@ class SeoModule extends AbstractModule
 		$this->wpFunctions->addHook('pre_get_document_title', 'filterDocumentTitle', 20);
 		$this->wpFunctions->addHook('document_title_parts', 'filterDocumentTitleParts', 20);
 		$this->wpFunctions->addHook('wp_head', 'renderHeadMeta', 1);
+		$this->wpFunctions->addHook('wp_head', 'renderSchema', 20);
+		$this->wpFunctions->addHook('wp_robots', 'filterRobots');
+		$this->wpFunctions->addHook('wp_sitemaps_taxonomies', 'filterSitemapTaxonomies');
+		$this->wpFunctions->addHook('wp_sitemaps_add_provider', 'filterSitemapProviders', 10, 2);
 	}
 
 	public function filterDocumentTitle(string $title): string
@@ -93,6 +97,65 @@ class SeoModule extends AbstractModule
 		}
 	}
 
+	public function renderSchema(): void
+	{
+		if (is_admin()) {
+			return;
+		}
+
+		$postId = $this->getSeoTargetPostId();
+		if ($postId <= 0) {
+			return;
+		}
+
+		$post = get_post($postId);
+		if (!is_object($post)) {
+			return;
+		}
+
+		$schema = $this->buildSchemaGraph($post);
+		if ($schema === []) {
+			return;
+		}
+
+		echo '<script type="application/ld+json">' . wp_json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . '</script>' . "\n";
+	}
+
+	public function filterRobots(array $robots): array
+	{
+		if (is_admin()) {
+			return $robots;
+		}
+
+		if (is_search() || is_404() || is_date() || is_tag() || (is_paged() && !is_singular())) {
+			return [
+				'noindex' => true,
+				'follow' => true,
+				'max-image-preview' => 'large',
+			];
+		}
+
+		$robots['max-image-preview'] = 'large';
+
+		return $robots;
+	}
+
+	public function filterSitemapTaxonomies(array $taxonomies): array
+	{
+		unset($taxonomies['post_tag']);
+
+		return $taxonomies;
+	}
+
+	public function filterSitemapProviders($provider, string $name)
+	{
+		if ($name === 'users') {
+			return false;
+		}
+
+		return $provider;
+	}
+
 	private function getSeoTargetPostId(): int
 	{
 		if (is_singular('agdc_roundup') || (is_singular('post') && get_post_meta(get_queried_object_id(), '_agdc_content_kind', true) === 'free_game')) {
@@ -100,6 +163,96 @@ class SeoModule extends AbstractModule
 		}
 
 		return 0;
+	}
+
+	private function buildSchemaGraph(\WP_Post $post): array
+	{
+		$meta = $this->buildMeta($post);
+		if ($meta === null) {
+			return [];
+		}
+
+		$marketKey = (string) get_post_meta($post->ID, '_agdc_market_key', true);
+		$repo = new MarketTargetRepository();
+		$marketTarget = $marketKey !== '' ? ($repo->findByKey($marketKey) ?: $repo->getDefaultTarget()) : $repo->getDefaultTarget();
+		$locale = strtolower((string) (($marketTarget['language_code'] ?? 'en') . '-' . ($marketTarget['country_code'] ?? 'US')));
+
+		$graph = [];
+		$graph[] = [
+			'@context' => 'https://schema.org',
+			'@type' => 'WebSite',
+			'name' => get_bloginfo('name'),
+			'url' => home_url('/'),
+			'description' => get_bloginfo('description'),
+			'inLanguage' => $locale,
+		];
+
+		if ($post->post_type === 'agdc_roundup') {
+			$snapshot = get_post_meta($post->ID, '_agdc_snapshot_payload', true);
+			$games = is_array($snapshot['games'] ?? null) ? $snapshot['games'] : [];
+
+			$graph[] = [
+				'@context' => 'https://schema.org',
+				'@type' => 'CollectionPage',
+				'name' => $meta['title'],
+				'url' => $meta['canonical'],
+				'description' => $meta['description'],
+				'inLanguage' => $locale,
+			];
+
+			if ($games !== []) {
+				$itemList = [
+					'@context' => 'https://schema.org',
+					'@type' => 'ItemList',
+					'name' => $meta['title'],
+					'itemListElement' => [],
+				];
+
+				foreach ($games as $index => $game) {
+					if (!is_array($game)) {
+						continue;
+					}
+
+					$itemList['itemListElement'][] = [
+						'@type' => 'ListItem',
+						'position' => $index + 1,
+						'url' => (string) ($game['url'] ?? $meta['canonical']),
+						'name' => (string) ($game['name'] ?? ''),
+					];
+				}
+
+				$graph[] = $itemList;
+			}
+		}
+
+		if ($post->post_type === 'post' && get_post_meta($post->ID, '_agdc_content_kind', true) === 'free_game') {
+			$graph[] = [
+				'@context' => 'https://schema.org',
+				'@type' => 'BlogPosting',
+				'headline' => $meta['title'],
+				'mainEntityOfPage' => $meta['canonical'],
+				'datePublished' => get_post_time(DATE_W3C, true, $post),
+				'dateModified' => get_post_modified_time(DATE_W3C, true, $post),
+				'description' => $meta['description'],
+				'inLanguage' => $locale,
+				'author' => [
+					'@type' => 'Person',
+					'name' => get_the_author_meta('display_name', (int) $post->post_author),
+				],
+				'publisher' => [
+					'@type' => 'Organization',
+					'name' => get_bloginfo('name'),
+				],
+				'image' => $meta['image'] !== '' ? [$meta['image']] : [],
+			];
+		}
+
+		$breadcrumb = $this->buildBreadcrumbSchema($post, $meta['canonical']);
+		if ($breadcrumb !== null) {
+			$graph[] = $breadcrumb;
+		}
+
+		return $graph;
 	}
 
 	private function buildMeta(\WP_Post $post): ?array
@@ -256,5 +409,55 @@ class SeoModule extends AbstractModule
 		}
 
 		return $alternates;
+	}
+
+	private function buildBreadcrumbSchema(\WP_Post $post, string $canonical): ?array
+	{
+		$items = [
+			[
+				'name' => get_bloginfo('name'),
+				'url' => home_url('/'),
+			],
+		];
+
+		if ($post->post_type === 'agdc_roundup') {
+			$items[] = [
+				'name' => get_the_title($post),
+				'url' => $canonical,
+			];
+		} elseif ($post->post_type === 'post') {
+			$categories = get_the_category($post->ID);
+			if (!empty($categories) && isset($categories[0]) && $categories[0] instanceof \WP_Term) {
+				$items[] = [
+					'name' => $categories[0]->name,
+					'url' => get_term_link($categories[0]),
+				];
+			}
+			$items[] = [
+				'name' => get_the_title($post),
+				'url' => $canonical,
+			];
+		}
+
+		if (count($items) < 2) {
+			return null;
+		}
+
+		$list = [
+			'@context' => 'https://schema.org',
+			'@type' => 'BreadcrumbList',
+			'itemListElement' => [],
+		];
+
+		foreach ($items as $index => $item) {
+			$list['itemListElement'][] = [
+				'@type' => 'ListItem',
+				'position' => $index + 1,
+				'name' => $item['name'],
+				'item' => $item['url'],
+			];
+		}
+
+		return $list;
 	}
 }
