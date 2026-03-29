@@ -9,6 +9,7 @@ class SeoModule extends AbstractModule
 {
 	public function setup()
 	{
+		remove_action('wp_head', 'rel_canonical');
 		$this->wpFunctions->addHook('pre_get_document_title', 'filterDocumentTitle', 20);
 		$this->wpFunctions->addHook('document_title_parts', 'filterDocumentTitleParts', 20);
 		$this->wpFunctions->addHook('wp_head', 'renderHeadMeta', 1);
