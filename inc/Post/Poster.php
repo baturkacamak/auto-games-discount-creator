@@ -134,16 +134,18 @@ if (!class_exists('AutoGamesDiscountCreator\Post\Poster')) {
 
 			if ($post_id && !is_wp_error($post_id)) {
 				$copySet = (new MarketTargetRepository())->getCopySet($market_target);
+				$wpmlSupport = new WpmlSupport();
 				$this->updatePostMeta((int) $post_id, $post_title, '');
 				update_post_meta($post_id, '_agdc_market_key', (string) ($market_target['market_key'] ?? ''));
 				update_post_meta($post_id, '_agdc_language_code', (string) ($market_target['language_code'] ?? ''));
 				update_post_meta($post_id, '_agdc_site_section', (string) ($market_target['site_section'] ?? ''));
 				update_post_meta($post_id, '_agdc_content_kind', $this->postTypeStrategy->getContentKind());
-				(new WpmlSupport())->assignPostLanguage(
+				$wpmlSupport->assignPostLanguage(
 					(int) $post_id,
 					(string) $post_type,
 					(string) ($market_target['market_key'] ?? ($market_target['language_code'] ?? ''))
 				);
+				$this->maybeLinkPostTranslation($wpmlSupport, (int) $post_id, (string) $post_type, $game_data, $market_target);
 				(new LocalizedTaxonomyResolver())->assignTermsToPost(
 					(int) $post_id,
 					$market_target,
@@ -365,6 +367,82 @@ if (!class_exists('AutoGamesDiscountCreator\Post\Poster')) {
 			$snapshot['games'] = $games;
 
 			return $snapshot;
+		}
+
+		private function maybeLinkPostTranslation(WpmlSupport $wpmlSupport, int $postId, string $postType, array $gameData, array $marketTarget): void
+		{
+			$defaultMarketKey = (string) ($this->settings['data_model']['default_market_target_key'] ?? 'tr-tr');
+			$currentMarketKey = (string) ($marketTarget['market_key'] ?? '');
+
+			if ($postId <= 0 || $postType === '' || $currentMarketKey === '' || $currentMarketKey === $defaultMarketKey) {
+				return;
+			}
+
+			$sourcePostId = $this->findSourceTranslationPostId($defaultMarketKey, $postType, $gameData);
+			if ($sourcePostId <= 0 || $sourcePostId === $postId) {
+				return;
+			}
+
+			$wpmlSupport->linkPostTranslation($sourcePostId, $postId, $postType, $currentMarketKey);
+		}
+
+		private function findSourceTranslationPostId(string $defaultMarketKey, string $postType, array $gameData): int
+		{
+			global $wpdb;
+
+			if ($defaultMarketKey === '' || $postType === '') {
+				return 0;
+			}
+
+			$contentKind = $this->postTypeStrategy->getContentKind();
+			if ($contentKind === 'free_game') {
+				$defaultTarget = (new MarketTargetRepository())->findByKey($defaultMarketKey);
+				$defaultTargetId = (int) ($defaultTarget['id'] ?? 0);
+				$gameId = (int) ($gameData[0]['game_id'] ?? 0);
+				if ($defaultTargetId > 0 && $gameId > 0) {
+					$generatedPostsTable = $wpdb->prefix . 'agdc_generated_posts';
+					$sourcePostId = (int) $wpdb->get_var(
+						$wpdb->prepare(
+							"SELECT wp_post_id FROM {$generatedPostsTable}
+							WHERE market_target_id = %d
+								AND content_kind = %s
+								AND game_id = %d
+							ORDER BY id DESC
+							LIMIT 1",
+							$defaultTargetId,
+							'free_game',
+							$gameId
+						)
+					);
+					if ($sourcePostId > 0) {
+						return $sourcePostId;
+					}
+				}
+			}
+
+			$postTable = $wpdb->posts;
+			$postMetaTable = $wpdb->postmeta;
+
+			return (int) $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT p.ID
+					FROM {$postTable} p
+					INNER JOIN {$postMetaTable} market_meta ON market_meta.post_id = p.ID AND market_meta.meta_key = %s
+					INNER JOIN {$postMetaTable} kind_meta ON kind_meta.post_id = p.ID AND kind_meta.meta_key = %s
+					WHERE p.post_type = %s
+						AND market_meta.meta_value = %s
+						AND kind_meta.meta_value = %s
+						AND DATE(p.post_date) = %s
+					ORDER BY p.ID DESC
+					LIMIT 1",
+					'_agdc_market_key',
+					'_agdc_content_kind',
+					$postType,
+					$defaultMarketKey,
+					$contentKind,
+					current_time('Y-m-d')
+				)
+			);
 		}
 	}
 }

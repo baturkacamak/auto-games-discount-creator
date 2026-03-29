@@ -19,7 +19,7 @@ class HumbleAgeCheckImageStrategy implements ImageSourceStrategyInterface
 			return null;
 		}
 
-		if (preg_match('#^/store/agecheck/([^/?#]+)#', $path, $matches)) {
+		if (preg_match('#^/store/agecheck/([^/?\\#]+)#', $path, $matches)) {
 			return 'https://www.humblebundle.com/store/' . $matches[1];
 		}
 

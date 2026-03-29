@@ -13,7 +13,9 @@ $resolver = new LocalizedTaxonomyResolver();
 $wpml = new WpmlSupport();
 
 $targetsByKey = [];
-foreach ($repo->all() as $target) {
+$candidateKeys = ['tr-tr', 'en-gb', 'en-us', 'es-es', 'es-mx'];
+foreach ($candidateKeys as $candidateKey) {
+	$target = $repo->findByKey($candidateKey);
 	if (!is_array($target) || empty($target['key'])) {
 		continue;
 	}
