@@ -253,29 +253,6 @@ class AdminSettingsModule extends AbstractModule
 		);
 
 		add_settings_section(
-			'agdc_queries_section',
-			__('Legacy Query Import', 'auto-games-discount-creator'),
-			[$this, 'renderQueriesSection'],
-			'auto-games-discount-creator'
-		);
-
-		add_settings_field(
-			'agdc_daily_queries',
-			__('Daily queries', 'auto-games-discount-creator'),
-			[$this, 'renderDailyQueriesField'],
-			'auto-games-discount-creator',
-			'agdc_queries_section'
-		);
-
-		add_settings_field(
-			'agdc_hourly_queries',
-			__('Hourly queries', 'auto-games-discount-creator'),
-			[$this, 'renderHourlyQueriesField'],
-			'auto-games-discount-creator',
-			'agdc_queries_section'
-		);
-
-		add_settings_section(
 			'agdc_source_section',
 			__('Source', 'auto-games-discount-creator'),
 			[$this, 'renderSourceSection'],
@@ -424,11 +401,6 @@ class AdminSettingsModule extends AbstractModule
 		$settings['source']['itad_currency_code'] = strtoupper(sanitize_text_field($input['source']['itad_currency_code'] ?? 'TRY'));
 		$settings['source']['daily_payloads'] = $this->parseJsonPayloadList($input['source']['daily_payloads_json'] ?? '');
 		$settings['source']['hourly_payloads'] = $this->parseJsonPayloadList($input['source']['hourly_payloads_json'] ?? '');
-
-		$settings['queries'] = array_merge(
-			$this->parseQueryTextarea($input['daily_queries_text'] ?? '', 'daily'),
-			$this->parseQueryTextarea($input['hourly_queries_text'] ?? '', 'hourly')
-		);
 
 		return $settings;
 	}
@@ -656,12 +628,6 @@ class AdminSettingsModule extends AbstractModule
 		echo '<p>' . esc_html__('Overrides used only for free-game posts. Category and tags here are now mostly legacy fallbacks because localized taxonomy is assigned automatically from the market target.', 'auto-games-discount-creator') . '</p>';
 	}
 
-	public function renderQueriesSection(): void
-	{
-		echo '<span id="agdc_queries_section-title"></span>';
-		echo '<p>' . esc_html__('These old Rambouillet query strings are kept only as a migration/reference layer. The live scraper no longer reads them directly after the JSON payload migration.', 'auto-games-discount-creator') . '</p>';
-	}
-
 	public function renderDataModelSection(): void
 	{
 		echo '<span id="agdc_data_model_section-title"></span>';
@@ -870,16 +836,6 @@ class AdminSettingsModule extends AbstractModule
 		$this->renderRepeatWindowField('free_repeat_window_days', __('Prevent the same free game from being reposted for this many days.', 'auto-games-discount-creator'));
 	}
 
-	public function renderDailyQueriesField(): void
-	{
-		$this->renderQueriesTextarea('daily_queries_text', 'daily');
-	}
-
-	public function renderHourlyQueriesField(): void
-	{
-		$this->renderQueriesTextarea('hourly_queries_text', 'hourly');
-	}
-
 	public function renderItadSessionTokenField(): void
 	{
 		$settings = $this->settingsRepository->getAll();
@@ -1042,59 +998,6 @@ class AdminSettingsModule extends AbstractModule
 		echo '<p>';
 		echo '<a class="button button-secondary" href="' . esc_url($cleanup_url) . '">' . esc_html__('Delete AGDC Draft Posts', 'auto-games-discount-creator') . '</a>';
 		echo '</p>';
-	}
-
-	private function renderQueriesTextarea(string $fieldName, string $queryType): void
-	{
-		printf(
-			'<textarea class="large-text code" rows="7" name="%1$s[%2$s]">%3$s</textarea><p class="description">%4$s</p>',
-			esc_attr(AGDC_SETTINGS_OPTION),
-			esc_attr($fieldName),
-			esc_textarea($this->implodeQueriesByType($queryType)),
-			esc_html__('Legacy only. Leave these alone unless you are intentionally comparing old string-based filters with the new JSON payload model.', 'auto-games-discount-creator')
-		);
-	}
-
-	private function implodeQueriesByType(string $queryType): string
-	{
-		$settings = $this->settingsRepository->getAll();
-		$queries = array_filter(
-			$settings['queries'],
-			static fn(array $query): bool => ($query['query-type'] ?? '') === $queryType
-		);
-
-		return implode(
-			"\n",
-			array_map(
-				static fn(array $query): string => (string) ($query['query-value'] ?? ''),
-				$queries
-			)
-		);
-	}
-
-	private function parseQueryTextarea(string $value, string $queryType): array
-	{
-		$queries = [];
-		$lines = preg_split('/\r\n|\r|\n/', $value);
-
-		if (!is_array($lines)) {
-			return $queries;
-		}
-
-		foreach ($lines as $line) {
-			$query_value = trim($line);
-			if ($query_value === '') {
-				continue;
-			}
-
-			$queries[] = [
-				'query-key' => $queryType . '_' . substr(md5($query_value), 0, 12),
-				'query-value' => $query_value,
-				'query-type' => $queryType,
-			];
-		}
-
-		return $queries;
 	}
 
 	private function renderMarketTargetSelect(string $settingKey): void
@@ -1317,7 +1220,6 @@ class AdminSettingsModule extends AbstractModule
 			#agdc_daily_posting_section-title,
 			#agdc_free_posting_section-title,
 			#agdc_data_model_section-title,
-			#agdc_queries_section-title,
 			#agdc_source_section-title,
 			#agdc_debug_section-title{display:block;position:relative;top:-72px;visibility:hidden}
 		</style>
@@ -1340,8 +1242,6 @@ class AdminSettingsModule extends AbstractModule
 					'Daily Posting': 'posting',
 					'Free Game Posting': 'posting',
 					'Data Model': 'data',
-					'Legacy Query Import': 'source',
-					'Queries': 'source',
 					'Source': 'source',
 					'Debug': 'debug'
 				};
@@ -1499,17 +1399,6 @@ class AdminSettingsModule extends AbstractModule
 					<a class="button button-secondary" href="<?php echo esc_url($hourly_test_url); ?>"><?php esc_html_e('Run Hourly Test', 'auto-games-discount-creator'); ?></a>
 					<a class="button button-secondary" href="<?php echo esc_url($daily_test_url); ?>"><?php esc_html_e('Run Daily Test', 'auto-games-discount-creator'); ?></a>
 					<a class="button button-secondary" href="<?php echo esc_url($cleanup_url); ?>"><?php esc_html_e('Delete AGDC Draft Posts', 'auto-games-discount-creator'); ?></a>
-				</p>
-			</div>
-			<div class="agdc-card">
-				<h2><?php esc_html_e('Sections', 'auto-games-discount-creator'); ?></h2>
-				<p class="agdc-note"><?php esc_html_e('Use these shortcuts to switch tabs quickly. Source is the active scraper config. Legacy Query Import only mirrors the old string-based filters.', 'auto-games-discount-creator'); ?></p>
-				<p class="agdc-section-nav">
-					<a class="button-link" href="#agdc-tab-general" data-agdc-tab-target="general"><?php esc_html_e('General', 'auto-games-discount-creator'); ?></a>
-					<a class="button-link" href="#agdc-tab-posting" data-agdc-tab-target="posting"><?php esc_html_e('Posting', 'auto-games-discount-creator'); ?></a>
-					<a class="button-link" href="#agdc-tab-data" data-agdc-tab-target="data"><?php esc_html_e('Data Model', 'auto-games-discount-creator'); ?></a>
-					<a class="button-link" href="#agdc-tab-source" data-agdc-tab-target="source"><?php esc_html_e('Source', 'auto-games-discount-creator'); ?></a>
-					<a class="button-link" href="#agdc-tab-debug" data-agdc-tab-target="debug"><?php esc_html_e('Debug', 'auto-games-discount-creator'); ?></a>
 				</p>
 			</div>
 		</div>
