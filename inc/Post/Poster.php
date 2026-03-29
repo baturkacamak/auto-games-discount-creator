@@ -5,10 +5,12 @@ namespace AutoGamesDiscountCreator\Post;
 use AutoGamesDiscountCreator\Core\Integration\WpmlSupport;
 use AutoGamesDiscountCreator\Core\Settings\SettingsRepository;
 use AutoGamesDiscountCreator\Core\Utility\Database;
+use AutoGamesDiscountCreator\Core\Utility\LocalizedTaxonomyResolver;
 use AutoGamesDiscountCreator\Core\Utility\UtilityFactory;
 use AutoGamesDiscountCreator\Core\WordPress\WordPressFunctions;
 use AutoGamesDiscountCreator\Post\Strategy\DailyPostStrategy;
 use AutoGamesDiscountCreator\Post\Strategy\PostTypeStrategy;
+use AutoGamesDiscountCreator\Core\Settings\MarketTargetRepository;
 use Exception;
 
 if (!class_exists('AutoGamesDiscountCreator\Post\Poster')) {
@@ -89,9 +91,7 @@ if (!class_exists('AutoGamesDiscountCreator\Post\Poster')) {
 			$game_data  = $this->postTypeStrategy->getGameData(['price[>]' => 0]);
 			$post_title = $this->postTypeStrategy->getPostTitle();
 			$posting_settings = $this->getPostingSettings();
-			$post_tags  = (string) ($posting_settings['tags'] ?? self::TAGS);
 			$post_author = (int) ($posting_settings['author_id'] ?? self::POST_AUTHOR);
-			$post_category = (int) ($posting_settings['category_id'] ?? self::POST_CATEGORY);
 			$post_status = (string) ($posting_settings['post_status'] ?? 'draft');
 			if (!in_array($post_status, ['draft', 'publish'], true)) {
 				$post_status = 'draft';
@@ -119,14 +119,11 @@ if (!class_exists('AutoGamesDiscountCreator\Post\Poster')) {
 				'post_content'  => $post_content,
 				'post_status'   => $post_status,
 				'post_author'   => $post_author,
-				'post_excerpt'  => $post_title . ' ' . $post_tags,
+				'post_excerpt'  => $post_title,
 				'post_name'     => $post_slug,
 				'post_title'    => $post_title,
-				'tags_input'    => $post_tags,
+				'tags_input'    => [],
 			];
-			if ($post_category > 0) {
-				$post_args['post_category'] = [$post_category];
-			}
 
 			if ($this->postTypeStrategy instanceof DailyPostStrategy && $existing_post_id > 0) {
 				$post_args['ID'] = $existing_post_id;
@@ -136,7 +133,8 @@ if (!class_exists('AutoGamesDiscountCreator\Post\Poster')) {
 			}
 
 			if ($post_id && !is_wp_error($post_id)) {
-				$this->updatePostMeta((int) $post_id, $post_title, $post_tags);
+				$copySet = (new MarketTargetRepository())->getCopySet($market_target);
+				$this->updatePostMeta((int) $post_id, $post_title, '');
 				update_post_meta($post_id, '_agdc_market_key', (string) ($market_target['market_key'] ?? ''));
 				update_post_meta($post_id, '_agdc_language_code', (string) ($market_target['language_code'] ?? ''));
 				update_post_meta($post_id, '_agdc_site_section', (string) ($market_target['site_section'] ?? ''));
@@ -145,6 +143,12 @@ if (!class_exists('AutoGamesDiscountCreator\Post\Poster')) {
 					(int) $post_id,
 					(string) $post_type,
 					(string) ($market_target['market_key'] ?? ($market_target['language_code'] ?? ''))
+				);
+				(new LocalizedTaxonomyResolver())->assignTermsToPost(
+					(int) $post_id,
+					$market_target,
+					$this->postTypeStrategy->getContentKind(),
+					$copySet
 				);
 				if ($this->postTypeStrategy instanceof DailyPostStrategy && is_array($snapshot_payload)) {
 					update_post_meta($post_id, '_agdc_snapshot_payload', $snapshot_payload);
