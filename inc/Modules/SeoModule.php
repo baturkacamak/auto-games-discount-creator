@@ -310,17 +310,37 @@ class SeoModule extends AbstractModule
 		$count = count($games);
 		$currency = strtoupper((string) ($marketTarget['default_currency_code'] ?? ''));
 		$language = strtolower((string) ($marketTarget['language_code'] ?? 'en'));
+		$featuredGame = $this->getFeaturedRoundupGame($games);
+		$featuredName = is_array($featuredGame) ? (string) ($featuredGame['name'] ?? '') : '';
+		$featuredStore = is_array($featuredGame) ? $this->formatStoreKey((string) ($featuredGame['store_key'] ?? '')) : '';
+		$featuredDiscount = is_array($featuredGame) && isset($featuredGame['cut']) ? (int) round((float) $featuredGame['cut']) : 0;
 
 		if ($language === 'tr') {
+			if ($featuredName !== '') {
+				return trim(sprintf('%d oyunluk günlük indirim seçkisi. Öne çıkan oyun: %s (%s, %%%d indirim). Fiyatlar %s üzerinden gösterilir.', $count, $featuredName, $featuredStore ?: 'mağaza', $featuredDiscount, $currency ?: 'yerel para birimi'));
+			}
+
 			return trim(sprintf('%d oyunluk günlük indirim seçkisi. Fiyatlar %s üzerinden gösterilir.', $count, $currency ?: 'yerel para birimi'));
 		}
 
 		if ($language === 'es') {
+			if ($featuredName !== '') {
+				return trim(sprintf('Selección diaria con %d juegos. Destacado: %s en %s con %d%% de descuento. Los precios se muestran en %s.', $count, $featuredName, $featuredStore ?: 'la tienda', $featuredDiscount, $currency ?: 'la moneda local'));
+			}
+
 			return trim(sprintf('Selección diaria con %d juegos. Los precios se muestran en %s.', $count, $currency ?: 'la moneda local'));
 		}
 
 		if ($language === 'ro') {
+			if ($featuredName !== '') {
+				return trim(sprintf('Selecție zilnică cu %d jocuri. Jocul evidențiat este %s pe %s, cu reducere de %d%%. Prețurile sunt afișate în %s.', $count, $featuredName, $featuredStore ?: 'magazin', $featuredDiscount, $currency ?: 'moneda locală'));
+			}
+
 			return trim(sprintf('Selecție zilnică cu %d jocuri. Prețurile sunt afișate în %s.', $count, $currency ?: 'moneda locală'));
+		}
+
+		if ($featuredName !== '') {
+			return trim(sprintf('Daily roundup with %d games. Featured pick: %s at %s with %d%% off. Prices are shown in %s.', $count, $featuredName, $featuredStore ?: 'the store', $featuredDiscount, $currency ?: 'the local currency'));
 		}
 
 		return trim(sprintf('Daily roundup with %d games. Prices are shown in %s.', $count, $currency ?: 'the local currency'));
@@ -331,20 +351,21 @@ class SeoModule extends AbstractModule
 		$title = get_the_title($post);
 		$currency = strtoupper((string) ($marketTarget['default_currency_code'] ?? ''));
 		$language = strtolower((string) ($marketTarget['language_code'] ?? 'en'));
+		$store = $this->getFreeGameStoreName($post);
 
 		if ($language === 'tr') {
-			return trim(sprintf('%s için ücretsiz oyun fırsatı. Market fiyat gösterimi %s bazlıdır.', $title, $currency ?: 'yerel para birimi'));
+			return trim(sprintf('%s için ücretsiz oyun fırsatı. Mağaza: %s. Market fiyat gösterimi %s bazlıdır.', $title, $store ?: 'bilinmiyor', $currency ?: 'yerel para birimi'));
 		}
 
 		if ($language === 'es') {
-			return trim(sprintf('Oferta de juego gratis para %s. La referencia de mercado usa %s.', $title, $currency ?: 'la moneda local'));
+			return trim(sprintf('Oferta de juego gratis para %s. Tienda: %s. La referencia de mercado usa %s.', $title, $store ?: 'desconocida', $currency ?: 'la moneda local'));
 		}
 
 		if ($language === 'ro') {
-			return trim(sprintf('Ofertă de joc gratuit pentru %s. Referința de piață folosește %s.', $title, $currency ?: 'moneda locală'));
+			return trim(sprintf('Ofertă de joc gratuit pentru %s. Magazin: %s. Referința de piață folosește %s.', $title, $store ?: 'necunoscut', $currency ?: 'moneda locală'));
 		}
 
-		return trim(sprintf('Free game deal for %s. Market pricing reference uses %s.', $title, $currency ?: 'the local currency'));
+		return trim(sprintf('Free game deal for %s. Store: %s. Market pricing reference uses %s.', $title, $store ?: 'unknown', $currency ?: 'the local currency'));
 	}
 
 	private function getRoundupImage(array $snapshot): string
@@ -426,7 +447,86 @@ class SeoModule extends AbstractModule
 			];
 		}
 
+		$xDefault = $this->getXDefaultAlternate($translations, $post->post_type);
+		if ($xDefault !== null) {
+			$alternates[] = $xDefault;
+		}
+
 		return $alternates;
+	}
+
+	private function getXDefaultAlternate(array $translations, string $postType): ?array
+	{
+		$repo = new MarketTargetRepository();
+		$defaultKey = (string) ($repo->getDefaultTarget()['key'] ?? '');
+		$fallbackPost = null;
+
+		foreach ($translations as $translation) {
+			if (!is_object($translation) || empty($translation->element_id)) {
+				continue;
+			}
+
+			$translatedPost = get_post((int) $translation->element_id);
+			if (!$translatedPost instanceof \WP_Post) {
+				continue;
+			}
+
+			if ($fallbackPost === null) {
+				$fallbackPost = $translatedPost;
+			}
+
+			$marketKey = (string) get_post_meta($translatedPost->ID, '_agdc_market_key', true);
+			if ($marketKey === $defaultKey) {
+				return [
+					'hreflang' => 'x-default',
+					'url' => $this->buildAlternateUrl($translatedPost),
+				];
+			}
+		}
+
+		if ($fallbackPost instanceof \WP_Post) {
+			return [
+				'hreflang' => 'x-default',
+				'url' => $this->buildAlternateUrl($fallbackPost),
+			];
+		}
+
+		return null;
+	}
+
+	private function getFeaturedRoundupGame(array $games): ?array
+	{
+		foreach ($games as $game) {
+			if (is_array($game) && !empty($game['name'])) {
+				return $game;
+			}
+		}
+
+		return null;
+	}
+
+	private function formatStoreKey(string $storeKey): string
+	{
+		$storeKey = trim($storeKey);
+		if ($storeKey === '') {
+			return '';
+		}
+
+		return ucwords(str_replace(['_', '-'], ' ', $storeKey));
+	}
+
+	private function getFreeGameStoreName(\WP_Post $post): string
+	{
+		$content = (string) $post->post_content;
+		if (preg_match('/Mağaza:\s*<strong>([^<]+)<\/strong>/u', $content, $matches) === 1) {
+			return trim((string) ($matches[1] ?? ''));
+		}
+
+		if (preg_match('/Store:\s*<strong>([^<]+)<\/strong>/i', $content, $matches) === 1) {
+			return trim((string) ($matches[1] ?? ''));
+		}
+
+		return '';
 	}
 
 	private function buildAlternateUrl(\WP_Post $post): string
