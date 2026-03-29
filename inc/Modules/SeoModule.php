@@ -3,7 +3,7 @@
 namespace AutoGamesDiscountCreator\Modules;
 
 use AutoGamesDiscountCreator\Core\Module\AbstractModule;
-use AutoGamesDiscountCreator\Core\Seo\MarketRoundupsSitemapProvider;
+use AutoGamesDiscountCreator\Core\Seo\MarketLocalizedRoundupsSitemapProvider;
 use AutoGamesDiscountCreator\Core\Settings\MarketTargetRepository;
 
 class SeoModule extends AbstractModule
@@ -153,7 +153,7 @@ class SeoModule extends AbstractModule
 	public function registerSitemapProvider($wpSitemaps = null): void
 	{
 		if (is_object($wpSitemaps) && isset($wpSitemaps->registry) && method_exists($wpSitemaps->registry, 'add_provider')) {
-			$wpSitemaps->registry->add_provider('marketroundups', new MarketRoundupsSitemapProvider());
+			$wpSitemaps->registry->add_provider('marketroundups', new MarketLocalizedRoundupsSitemapProvider());
 			return;
 		}
 
@@ -161,7 +161,7 @@ class SeoModule extends AbstractModule
 			return;
 		}
 
-		wp_register_sitemap_provider('marketroundups', new MarketRoundupsSitemapProvider());
+		wp_register_sitemap_provider('marketroundups', new MarketLocalizedRoundupsSitemapProvider());
 	}
 
 	public function filterSitemapPostTypes(array $postTypes): array
