@@ -17,6 +17,8 @@ class SeoModule extends AbstractModule
 		$this->wpFunctions->addHook('wp_robots', 'filterRobots');
 		$this->wpFunctions->addHook('wp_sitemaps_taxonomies', 'filterSitemapTaxonomies');
 		$this->wpFunctions->addHook('wp_sitemaps_add_provider', 'filterSitemapProviders', 10, 2);
+		$this->wpFunctions->addHook('wp_sitemaps_posts_entry', 'filterSitemapPostEntry', 10, 3);
+		$this->wpFunctions->addHook('redirect_canonical', 'filterCanonicalRedirect', 10, 2);
 		$this->wpFunctions->addHook('wpml_hreflangs_html', 'filterWpmlHreflangsHtml');
 		$this->wpFunctions->addHook('robots_txt', 'filterRobotsTxt', 20, 2);
 	}
@@ -164,6 +166,30 @@ class SeoModule extends AbstractModule
 		return $this->getSeoTargetPostId() > 0 ? '' : $html;
 	}
 
+	public function filterSitemapPostEntry(array $entry, \WP_Post $post, string $postType): array
+	{
+		if ($postType !== 'agdc_roundup') {
+			return $entry;
+		}
+
+		$customUrl = $this->buildAlternateUrl($post);
+		if ($customUrl !== '') {
+			$entry['loc'] = $customUrl;
+		}
+
+		return $entry;
+	}
+
+	public function filterCanonicalRedirect($redirectUrl, string $requestedUrl)
+	{
+		$path = (string) parse_url($requestedUrl, PHP_URL_PATH);
+		if (str_contains($path, 'wp-sitemap')) {
+			return false;
+		}
+
+		return $redirectUrl;
+	}
+
 	public function filterRobotsTxt(string $output, bool $public): string
 	{
 		$lines = preg_split('/\r\n|\r|\n/', trim($output)) ?: [];
@@ -178,7 +204,7 @@ class SeoModule extends AbstractModule
 		}
 
 		$filtered[] = '';
-		$filtered[] = 'Sitemap: ' . home_url('/wp-sitemap-posts-agdc_roundup-1.xml');
+		$filtered[] = 'Sitemap: ' . untrailingslashit((string) get_option('home')) . '/wp-sitemap.xml';
 
 		return trim(implode("\n", array_filter($filtered, static fn($line) => $line !== null))) . "\n";
 	}
