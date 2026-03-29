@@ -1,6 +1,6 @@
 @if(isset($games) && count($games) > 0)
 	<div class="steam-content-body">
-		Bugün alınmaya değer toplam {{ count($games) }} oyun var.
+		{{ sprintf($copy['discount_intro'] ?? 'There are %d games worth grabbing today.', count($games)) }}
 	</div>
 	<div class="steam-cards">
 		<div class="ui cards">
@@ -19,15 +19,16 @@
 						   target="_blank"
 						>{{ $game['name'] }}</a>
 						<div class="description">
-							<div>Fiyatı: <strong>{{ $game['price'] }}</strong> TL</div>
-							<div>İndirim Oranı: <strong>{{ $game['cut'] }}</strong>%</div>
+							<div>{{ $copy['price_label'] ?? 'Price' }}: <strong>{{ $game['price'] }}</strong> {{ $game['currency_code'] ?? '' }}</div>
+							<div>{{ $copy['discount_label'] ?? 'Discount' }}: <strong>{{ $game['cut'] }}</strong>%</div>
+							<div>{{ $copy['store_label'] ?? 'Store' }}: <strong>{{ strtoupper($game['store_key'] ?? '') }}</strong></div>
 						</div>
 					</div>
 					<div class="extra content">
 						<a href="{{ $game['url'] }}"
 						   target="_blank"
 						>
-							<i class="steam icon"></i>
+							<i class="external icon"></i>
 							{{ $game['url'] }}
 						</a>
 					</div>

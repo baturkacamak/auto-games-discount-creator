@@ -50,5 +50,91 @@
       "query-value": "epic,bundlestars,humblestore,steam,gog,&steamperc/65/100,&price/0/0,&regular/5/max,&historylow;/options:strict",
       "query-type": "hourly"
     }
-  ]
+  ],
+  "source": {
+    "itad_session_token": "",
+    "itad_session_cookie": "",
+    "itad_visitor_cookie": "",
+    "itad_country_code": "TR",
+    "itad_currency_code": "TRY",
+    "daily_payloads": [
+      {
+        "query-key": "daily_verified_under_1_historical_low",
+        "sort": null,
+        "pages": 1,
+        "nondeals": true,
+        "gids": [],
+        "filter": {
+          "price": { "min": null, "max": 1 },
+          "cut": { "min": 90, "max": 100 },
+          "flag": "H",
+          "drm": [61, 16, 35],
+          "type": [1],
+          "typeNot": [2, 3, 7, 8],
+          "steamPerc": { "min": 27, "max": 100 },
+          "metaCritic": { "min": 17, "max": 100 },
+          "metaUser": { "min": 29, "max": 100 },
+          "openCritic": { "min": 25, "max": 100 },
+          "shops": [61, 6, 16, 35, 37, 52]
+        }
+      },
+      {
+        "query-key": "daily_verified_under_5_historical_low",
+        "sort": null,
+        "pages": 1,
+        "nondeals": true,
+        "gids": [],
+        "filter": {
+          "price": { "min": 0, "max": 5 },
+          "cut": { "min": 90, "max": 100 },
+          "flag": "H",
+          "drm": [61, 16, 35],
+          "type": [1],
+          "typeNot": [2, 3, 7, 8],
+          "steamPerc": { "min": 27, "max": 100 },
+          "metaCritic": { "min": 17, "max": 100 },
+          "metaUser": { "min": 29, "max": 100 },
+          "openCritic": { "min": 25, "max": 100 },
+          "shops": [61, 6, 16, 35, 37, 52]
+        }
+      },
+      {
+        "query-key": "daily_store_low_multi_store_quality",
+        "sort": null,
+        "pages": 1,
+        "nondeals": true,
+        "gids": [],
+        "filter": {
+          "flag": "S",
+          "cut": { "min": 75, "max": 100 },
+          "metaUser": { "min": 70, "max": 100 },
+          "metaCritic": { "min": 70, "max": 100 },
+          "steamPerc": { "min": 70, "max": 100 },
+          "steamCount": { "min": 500, "max": null },
+          "drm": [61, 16, 35],
+          "type": [1],
+          "typeNot": [2, 3, 7, 8],
+          "shops": [61, 6, 16, 35, 37, 52]
+        }
+      }
+    ],
+    "hourly_payloads": [
+      {
+        "query-key": "hourly_free_games_multi_store",
+        "sort": null,
+        "pages": 1,
+        "nondeals": true,
+        "gids": [],
+        "filter": {
+          "price": { "min": 0, "max": 0 },
+          "regular": { "min": 5, "max": null },
+          "flag": "H",
+          "shops": [16, 35, 37, 61, 6],
+          "type": [1],
+          "typeNot": [2, 3, 7, 8],
+          "steamPerc": { "min": 65, "max": 100 }
+        }
+      }
+    ]
+  }
 }

@@ -49,4 +49,10 @@ interface PostTypeStrategy
 	 * @return string The post content.
 	 */
 	public function getPostContent(array $gameData): string;
+
+	public function getPostSlug(): string;
+
+	public function getContentKind(): string;
+
+	public function getMarketTarget(): array;
 }

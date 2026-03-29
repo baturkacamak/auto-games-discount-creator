@@ -20,6 +20,23 @@ use AutoGamesDiscountCreator\AutoGamesDiscountCreator;
 include_once __DIR__ . '/globals/constants.php';
 include_once __DIR__ . '/globals/functions.php';
 
+spl_autoload_register(
+	static function (string $class): void {
+		$prefix = 'AutoGamesDiscountCreator\\';
+		if (strncmp($class, $prefix, strlen($prefix)) !== 0) {
+			return;
+		}
+
+		$relative_class = substr($class, strlen($prefix));
+		$relative_path = str_replace('\\', '/', $relative_class) . '.php';
+		$file = AGDC_PLUGIN_DIR . '/inc/' . $relative_path;
+
+		if (file_exists($file)) {
+			require_once $file;
+		}
+	}
+);
+
 if (file_exists(__DIR__ . '/vendor/autoload.php')) {
 	require_once __DIR__ . '/vendor/autoload.php';
 }
@@ -84,7 +101,7 @@ if (!function_exists('agdcIncorrectSlugNotice')) {
 							'pwa'
 						),
 						$actual_slug,
-						'rambouillet'
+						'auto-games-discount-creator'
 					)
 				);
 				?>
@@ -93,10 +110,28 @@ if (!function_exists('agdcIncorrectSlugNotice')) {
 		<?php
 	}
 
-	if ('wp-game-discount-poster' !== basename(AGDC_PLUGIN_DIR)) {
-		add_action('admin_notices', 'agdcIncorrectSlug');
+	if ('auto-games-discount-creator' !== basename(AGDC_PLUGIN_DIR)) {
+		add_action('admin_notices', 'agdcIncorrectSlugNotice');
 	}
 }
 
+if (!function_exists('agdcMissingDependenciesNotice')) {
+	function agdcMissingDependenciesNotice()
+	{
+		?>
+		<div class="notice notice-error">
+			<p>
+				<?php esc_html_e('Auto Games Discount Creator is active, but its Composer dependencies are missing. Run composer install in the plugin directory before enabling its automation tasks.', 'auto-games-discount-creator'); ?>
+			</p>
+		</div>
+		<?php
+	}
+}
+
+if (!class_exists('Medoo\\Medoo') || !class_exists('GuzzleHttp\\Client') || !class_exists('Philo\\Blade\\Blade')) {
+	add_action('admin_notices', 'agdcMissingDependenciesNotice');
+
+	return;
+}
 
 AutoGamesDiscountCreator::getInstance()->init();

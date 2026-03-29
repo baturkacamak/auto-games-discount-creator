@@ -13,6 +13,9 @@ use GuzzleHttp\Exception\GuzzleException;
  */
 class ImageRetriever
 {
+	private const CACHE_PREFIX = 'agdc_store_image_';
+	private const CACHE_MISS_MARKER = '__agdc_store_image_miss__';
+
 	/**
 	 * @var WebClient
 	 */
@@ -41,29 +44,77 @@ class ImageRetriever
 	 *
 	 * @return string The URL of the remote image.
 	 */
-	public function retrieve(string $url): string
+	public function retrieve(string $url, string $fallback = ''): string
 	{
+		$url = trim($url);
+		if ($url === '') {
+			return $fallback;
+		}
+
+		$cache_key = self::CACHE_PREFIX . substr(md5($url), 0, 24);
+		if (function_exists('get_transient')) {
+			$cached = get_transient($cache_key);
+			if ($cached === self::CACHE_MISS_MARKER) {
+				return $fallback;
+			}
+
+			if (is_string($cached) && $cached !== '') {
+				return $cached;
+			}
+		}
+
 		$html_response = '';
-		// Get the HTML response from the URL
 		try {
-			$html_response = $this->webClient->get($url);
+			$html_response = $this->webClient->getUntilMatch(
+				$url,
+				'~<meta[^>]+property=["\']og:image["\'][^>]+content=["\'][^"\']+["\']|<meta[^>]+content=["\'][^"\']+["\'][^>]+property=["\']og:image["\']~i'
+			);
+
+			if ($html_response === '') {
+				$html_response = $this->webClient->get($url);
+			}
 		} catch (GuzzleException $e) {
 		}
 
-		// If the HTML response was successful
 		if ($html_response) {
-			// Create the XPath object from the HTML response
+			$image_url = $this->extractOpenGraphImage($html_response);
+			if ($image_url !== '') {
+				if (function_exists('set_transient')) {
+					set_transient($cache_key, $image_url, 7 * DAY_IN_SECONDS);
+				}
+				return $image_url;
+			}
+
 			$xpath = $this->domHandler->createXpathFromHtml($html_response);
-
-			// Get the meta image node from the XPath object
 			$meta_image_node = $xpath->query('//meta[@property="og:image"]');
-
-			// If the meta image node exists
 			if ($meta_image_node && $meta_image_node->length) {
-				// Return the content attribute of the meta image node
-				return $meta_image_node->item(0)->getAttribute('content') ? $meta_image_node->item(0)->getAttribute(
+				$image_url = $meta_image_node->item(0)->getAttribute('content') ? $meta_image_node->item(0)->getAttribute(
 					'content'
 				) : '';
+				if ($image_url !== '' && function_exists('set_transient')) {
+					set_transient($cache_key, $image_url, 7 * DAY_IN_SECONDS);
+				}
+				return $image_url !== '' ? $image_url : $fallback;
+			}
+		}
+
+		if (function_exists('set_transient')) {
+			set_transient($cache_key, self::CACHE_MISS_MARKER, 6 * HOUR_IN_SECONDS);
+		}
+
+		return $fallback;
+	}
+
+	private function extractOpenGraphImage(string $html): string
+	{
+		$patterns = [
+			'~<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']~i',
+			'~<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']~i',
+		];
+
+		foreach ($patterns as $pattern) {
+			if (preg_match($pattern, $html, $matches) === 1) {
+				return trim(html_entity_decode((string) ($matches[1] ?? ''), ENT_QUOTES | ENT_HTML5));
 			}
 		}
 

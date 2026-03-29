@@ -17,6 +17,13 @@ class WordPressFunctions implements WordPressFunctionsInterface
 {
 	private $class;
 
+	public function __construct($class = null)
+	{
+		if (null !== $class) {
+			$this->setClass($class);
+		}
+	}
+
 	/**
 	 * @param mixed $class
 	 */

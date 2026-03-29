@@ -1,6 +1,6 @@
 @if(isset($game) && count($game) > 0)
 	<div class="steam-content-body">
-		Ucretsiz oyun {{$game['name']}}
+		{{ sprintf($copy['free_intro'] ?? 'Free game: %s', $game['name']) }}
 	</div>
 	<div class="steam-cards">
 		<div class="ui cards free-game">
@@ -23,7 +23,8 @@
 					   target="_blank"
 					>{{$game['name']}}</a>
 					<div class="description">
-						<div>Fiyatı: <strong>ÜCRETSİZ</strong></div>
+						<div>{{ $copy['price_label'] ?? 'Price' }}: <strong>{{ $copy['free_price_label'] ?? 'FREE' }}</strong></div>
+						<div>{{ $copy['store_label'] ?? 'Store' }}: <strong>{{ strtoupper($game['store_key'] ?? '') }}</strong></div>
 					</div>
 				</div>
 				<div class="extra content">

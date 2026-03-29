@@ -8,10 +8,13 @@
 
 namespace AutoGamesDiscountCreator\Post\Strategy;
 
+use AutoGamesDiscountCreator\Core\Settings\MarketTargetRepository;
 use AutoGamesDiscountCreator\Core\Utility\Date;
+use AutoGamesDiscountCreator\Core\Utility\GameReviewLookup;
+use AutoGamesDiscountCreator\Core\Utility\OfferImageResolver;
+use AutoGamesDiscountCreator\Core\Utility\UtilityFactory;
 use AutoGamesDiscountCreator\Core\WordPress\WordPressFunctionsInterface;
-use Philo\Blade\Blade;
-
+use AutoGamesDiscountCreator\Post\DailyRoundupSnapshotRenderer;
 /**
  * Class DailyPostStrategy
  *
@@ -25,6 +28,11 @@ class DailyPostStrategy implements PostTypeStrategy
 	private array $gameData;
 	protected WordPressFunctionsInterface $wpFunctions;
 	private Date $date;
+	private array $marketTarget;
+	private array $copySet;
+	private OfferImageResolver $offerImageResolver;
+	private DailyRoundupSnapshotRenderer $snapshotRenderer;
+	private GameReviewLookup $gameReviewLookup;
 
 	/**
 	 * DailyPostStrategy constructor.
@@ -33,12 +41,17 @@ class DailyPostStrategy implements PostTypeStrategy
 	 * @param WordPressFunctionsInterface $wpFunctions
 	 * @param Date $date
 	 */
-	public function __construct(array $gameData, WordPressFunctionsInterface $wpFunctions, Date $date)
+	public function __construct(array $gameData, WordPressFunctionsInterface $wpFunctions, Date $date, UtilityFactory $utilityFactory, ?array $marketTarget = null)
 	{
 		$this->wpFunctions = $wpFunctions;
 		$this->wpFunctions->setClass($this);
 		$this->gameData = $gameData;
 		$this->date     = $date;
+		$this->offerImageResolver = $utilityFactory->createOfferImageResolver();
+		$this->gameReviewLookup = $utilityFactory->createGameReviewLookup();
+		$this->marketTarget = $marketTarget ?: (new MarketTargetRepository())->getDefaultTarget();
+		$this->copySet = (new MarketTargetRepository())->getCopySet($this->marketTarget);
+		$this->snapshotRenderer = new DailyRoundupSnapshotRenderer();
 	}
 
 	/**
@@ -48,12 +61,7 @@ class DailyPostStrategy implements PostTypeStrategy
 	 */
 	public function getPostTitle(): string
 	{
-		return sprintf(
-			"%d %s %d Steam İndirimleri",
-			date('d'),
-			$this->date->getTurkishName(),
-			date('Y')
-		);
+		return sprintf($this->copySet['discount_title'], date('d'), $this->getLocalizedMonthName(), date('Y'));
 	}
 
 	/**
@@ -90,41 +98,84 @@ class DailyPostStrategy implements PostTypeStrategy
 	 */
 	public function getPostContent(array $gameData): string
 	{
-		$gameData = array_map(
+		return $this->snapshotRenderer->render($this->buildSnapshotPayload($gameData), $this->copySet);
+	}
+
+	public function buildSnapshotPayload(array $gameData): array
+	{
+		$games = array_map(
 			function ($game) {
-				$exploded = explode('/', $game['url']);
-				$steam_id = $exploded[count($exploded) - 1];
-				$type     = $exploded[3];
+				$resolvedImageUrl = $this->offerImageResolver->resolve([
+					'url' => (string) ($game['url'] ?? ''),
+					'store_key' => (string) ($game['store_key'] ?? ''),
+					'thumbnail_url' => (string) ($game['thumbnail_url'] ?? ''),
+				]);
+				$reviewData = $this->gameReviewLookup->lookupBySlug((string) ($game['itad_slug'] ?? ''));
 
 				return [
-					'name'          => $game['name'],
-					'thumbnail_url' => "https://steamcdn-a.akamaihd.net/steam/{$type}s/{$steam_id}/header.jpg",
-					'price'         => $game['price'],
-					'cut'           => $game['cut'],
-					'url'           => $game['url'],
+					'offer_id' => (int) ($game['offer_id'] ?? 0),
+					'game_id' => (int) ($game['game_id'] ?? 0),
+					'name' => (string) ($game['name'] ?? ''),
+					'url' => (string) ($game['url'] ?? ''),
+					'price' => (float) ($game['price'] ?? 0),
+					'regular_price' => isset($game['regular_price']) ? (float) $game['regular_price'] : null,
+					'currency_code' => (string) ($game['currency_code'] ?? 'USD'),
+					'cut' => (float) ($game['cut'] ?? 0),
+					'store_key' => (string) ($game['store_key'] ?? ''),
+					'itad_slug' => (string) ($game['itad_slug'] ?? ''),
+					'raw_thumbnail_url' => (string) ($game['thumbnail_url'] ?? ''),
+					'resolved_image_url' => $resolvedImageUrl,
+					'meta_score' => isset($reviewData['meta_score']) ? (float) $reviewData['meta_score'] : (isset($game['meta_score']) ? (float) $game['meta_score'] : null),
+					'user_score' => isset($reviewData['user_score']) ? (float) $reviewData['user_score'] : (isset($game['user_score']) ? (float) $game['user_score'] : null),
+					'opencritic_score' => isset($reviewData['opencritic_score']) ? (float) $reviewData['opencritic_score'] : (isset($game['opencritic_score']) ? (float) $game['opencritic_score'] : null),
+					'steam_rating' => isset($reviewData['steam_rating']) ? (float) $reviewData['steam_rating'] : (isset($game['steam_rating']) ? (float) $game['steam_rating'] : null),
+					'meta_review_count' => isset($reviewData['meta_review_count']) ? (int) $reviewData['meta_review_count'] : null,
+					'user_review_count' => isset($reviewData['user_review_count']) ? (int) $reviewData['user_review_count'] : null,
+					'opencritic_review_count' => isset($reviewData['opencritic_review_count']) ? (int) $reviewData['opencritic_review_count'] : null,
+					'steam_review_count' => isset($reviewData['steam_review_count']) ? (int) $reviewData['steam_review_count'] : null,
 				];
 			},
 			$gameData
 		);
 
-		return $this->getContent('content-tr', ['games' => $gameData]);
+		return [
+			'version' => 1,
+			'generated_at' => current_time('mysql'),
+			'market_key' => (string) ($this->marketTarget['market_key'] ?? ''),
+			'games' => array_values(array_filter($games, static fn($game): bool => $game['name'] !== '' && $game['url'] !== '')),
+		];
 	}
 
-	/**
-	 * Returns the content for the specified template and data.
-	 *
-	 * @param string $template The name of the template file.
-	 * @param array $data An array of data to use in the template.
-	 *
-	 * @return string The content for the specified template and data.
-	 * @throws Exception If the template file is not found.
-	 */
-	private function getContent(string $template, array $data): string
+	public function renderSnapshotPayload(array $snapshot): string
 	{
-		$views = __DIR__ . '/../content';
-		$cache = __DIR__ . '/../content/cache';
-		$blade = new Blade($views, $cache);
-
-		return $blade->view()->make($template, $data)->render();
+		return $this->snapshotRenderer->render($snapshot, $this->copySet);
 	}
+
+	public function getPostSlug(): string
+	{
+		return sanitize_title(
+			sprintf(
+				'%s-%s-%s-game-deals',
+				$this->marketTarget['seo_path_prefix'] ?? $this->marketTarget['site_section'] ?? 'market',
+				date('Y'),
+				date('m-d')
+			)
+		);
+	}
+
+	public function getContentKind(): string
+	{
+		return 'discount_roundup';
+	}
+
+	public function getMarketTarget(): array
+	{
+		return $this->marketTarget;
+	}
+	private function getLocalizedMonthName(): string
+	{
+		$month = (int) date('n');
+		return (string) ($this->copySet['month_names'][$month] ?? date('F'));
+	}
+
 }

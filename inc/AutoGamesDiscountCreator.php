@@ -5,7 +5,7 @@ namespace AutoGamesDiscountCreator;
 use AutoGamesDiscountCreator\Core\Module\Initializer\ModuleInitializer;
 use AutoGamesDiscountCreator\Core\Module\Registry\ModuleRegistrar;
 use AutoGamesDiscountCreator\Core\ModulesManager;
-use AutoGamesDiscountCreator\Core\Utility\JsonParser;
+use AutoGamesDiscountCreator\Core\Settings\SettingsRepository;
 use GuzzleHttp\Client;
 
 if (!class_exists('AutoGamesDiscountCreator\AutoGamesDiscountCreator')) {
@@ -39,7 +39,7 @@ if (!class_exists('AutoGamesDiscountCreator\AutoGamesDiscountCreator')) {
 		 */
 		public function __construct()
 		{
-			$this->settings = (new JsonParser(AGDC_PLUGIN_DIR . '/settings.json'))->parse();
+			$this->settings = (new SettingsRepository())->getAll();
 
 			return self::$instance = $this;
 		}

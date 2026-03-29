@@ -16,9 +16,11 @@ abstract class AbstractModule implements Module
 {
 	protected WordPressFunctions $wpFunctions;
 
-	public function __construct(WordPressFunctionsInterface $wpFunctions)
+	public function __construct(?WordPressFunctionsInterface $wpFunctions = null)
 	{
-		$this->wpFunctions = $wpFunctions;
+		$this->wpFunctions = $wpFunctions instanceof WordPressFunctionsInterface
+			? $wpFunctions
+			: new WordPressFunctions($this);
 		$this->wpFunctions->setClass($this);
 	}
 }
