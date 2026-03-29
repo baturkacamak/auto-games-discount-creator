@@ -12,4 +12,4 @@
 /composer.lock export-ignore
 /.editorconfig export-ignore
 /.phpcs.xml.dist export-ignore
-/vendor/ !/vendor/*
+/vendor/ export-ignore
