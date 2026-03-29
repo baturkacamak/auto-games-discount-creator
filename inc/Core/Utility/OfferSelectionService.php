@@ -2,13 +2,17 @@
 
 namespace AutoGamesDiscountCreator\Core\Utility;
 
+use AutoGamesDiscountCreator\Core\Settings\SettingsRepository;
+
 class OfferSelectionService
 {
 	private GameTitleNormalizer $gameTitleNormalizer;
+	private array $settings;
 
 	public function __construct()
 	{
 		$this->gameTitleNormalizer = new GameTitleNormalizer();
+		$this->settings = (new SettingsRepository())->getAll();
 	}
 
 	public function summarizeDailySelection(array $offers): array
@@ -37,10 +41,17 @@ class OfferSelectionService
 
 		$marketTargetId = $this->extractMarketTargetId($offers);
 		$posted_offer_ids = $this->getPostedOfferIds(array_column($offers, 'offer_id'), 'discount_roundup', $marketTargetId);
+		$recently_posted_game_ids = $this->getRecentlyPostedGameIds(
+			array_column($offers, 'game_id'),
+			'discount_roundup',
+			$marketTargetId,
+			$this->getRepeatWindowDays('discount_roundup')
+		);
 		$summary['already_posted'] = count(
 			array_filter(
 				$offers,
 				static fn(array $offer): bool => in_array((int) $offer['offer_id'], $posted_offer_ids, true)
+					|| in_array((int) ($offer['game_id'] ?? 0), $recently_posted_game_ids, true)
 			)
 		);
 
@@ -48,6 +59,7 @@ class OfferSelectionService
 			array_filter(
 				$offers,
 				static fn(array $offer): bool => !in_array((int) $offer['offer_id'], $posted_offer_ids, true)
+					&& !in_array((int) ($offer['game_id'] ?? 0), $recently_posted_game_ids, true)
 			)
 		);
 
@@ -79,10 +91,17 @@ class OfferSelectionService
 
 		$marketTargetId = $this->extractMarketTargetId($offers);
 		$posted_offer_ids = $this->getPostedOfferIds(array_column($offers, 'offer_id'), 'discount_roundup', $marketTargetId);
+		$recently_posted_game_ids = $this->getRecentlyPostedGameIds(
+			array_column($offers, 'game_id'),
+			'discount_roundup',
+			$marketTargetId,
+			$this->getRepeatWindowDays('discount_roundup')
+		);
 		$offers = array_values(
 			array_filter(
 				$offers,
 				static fn(array $offer): bool => !in_array((int) $offer['offer_id'], $posted_offer_ids, true)
+					&& !in_array((int) ($offer['game_id'] ?? 0), $recently_posted_game_ids, true)
 			)
 		);
 
@@ -145,10 +164,17 @@ class OfferSelectionService
 
 		$marketTargetId = $this->extractMarketTargetId($offers);
 		$posted_offer_ids = $this->getPostedOfferIds(array_column($offers, 'offer_id'), 'free_game', $marketTargetId);
+		$recently_posted_game_ids = $this->getRecentlyPostedGameIds(
+			array_column($offers, 'game_id'),
+			'free_game',
+			$marketTargetId,
+			$this->getRepeatWindowDays('free_game')
+		);
 		$summary['already_posted'] = count(
 			array_filter(
 				$offers,
 				static fn(array $offer): bool => in_array((int) $offer['offer_id'], $posted_offer_ids, true)
+					|| in_array((int) ($offer['game_id'] ?? 0), $recently_posted_game_ids, true)
 			)
 		);
 
@@ -156,6 +182,7 @@ class OfferSelectionService
 			array_filter(
 				$offers,
 				static fn(array $offer): bool => !in_array((int) $offer['offer_id'], $posted_offer_ids, true)
+					&& !in_array((int) ($offer['game_id'] ?? 0), $recently_posted_game_ids, true)
 			)
 		);
 
@@ -186,12 +213,23 @@ class OfferSelectionService
 
 		$marketTargetId = $this->extractMarketTargetId($offers);
 		$posted_offer_ids = $this->getPostedOfferIds(array_column($offers, 'offer_id'), 'free_game', $marketTargetId);
+		$recently_posted_game_ids = $this->getRecentlyPostedGameIds(
+			array_column($offers, 'game_id'),
+			'free_game',
+			$marketTargetId,
+			$this->getRepeatWindowDays('free_game')
+		);
 		$seen_games = [];
 		$selected = [];
 
 		foreach ($offers as $offer) {
 			$offer_id = (int) ($offer['offer_id'] ?? 0);
 			if (in_array($offer_id, $posted_offer_ids, true)) {
+				continue;
+			}
+
+			$gameId = (int) ($offer['game_id'] ?? 0);
+			if ($gameId > 0 && in_array($gameId, $recently_posted_game_ids, true)) {
 				continue;
 			}
 
@@ -240,6 +278,64 @@ class OfferSelectionService
 		$results = $wpdb->get_col($query);
 
 		return array_map('intval', is_array($results) ? $results : []);
+	}
+
+	private function getRecentlyPostedGameIds(array $gameIds, string $contentKind, ?int $marketTargetId, int $windowDays): array
+	{
+		global $wpdb;
+
+		if ($windowDays <= 0) {
+			return [];
+		}
+
+		$gameIds = array_values(
+			array_filter(
+				array_map('intval', $gameIds),
+				static fn(int $gameId): bool => $gameId > 0
+			)
+		);
+
+		if ($gameIds === []) {
+			return [];
+		}
+
+		$placeholders = implode(', ', array_fill(0, count($gameIds), '%d'));
+		$table = $wpdb->prefix . 'agdc_generated_posts';
+		$threshold = gmdate('Y-m-d H:i:s', time() - ($windowDays * DAY_IN_SECONDS));
+
+		if ($marketTargetId !== null && $marketTargetId > 0) {
+			$query = $wpdb->prepare(
+				"SELECT DISTINCT game_id FROM {$table}
+				WHERE content_kind = %s
+					AND market_target_id = %d
+					AND game_id IN ({$placeholders})
+					AND COALESCE(published_at, created_at) >= %s",
+				array_merge([$contentKind, $marketTargetId], $gameIds, [$threshold])
+			);
+		} else {
+			$query = $wpdb->prepare(
+				"SELECT DISTINCT game_id FROM {$table}
+				WHERE content_kind = %s
+					AND game_id IN ({$placeholders})
+					AND COALESCE(published_at, created_at) >= %s",
+				array_merge([$contentKind], $gameIds, [$threshold])
+			);
+		}
+
+		$results = $wpdb->get_col($query);
+
+		return array_map('intval', is_array($results) ? $results : []);
+	}
+
+	private function getRepeatWindowDays(string $contentKind): int
+	{
+		$dataModel = is_array($this->settings['data_model'] ?? null) ? $this->settings['data_model'] : [];
+
+		if ($contentKind === 'free_game') {
+			return max(0, (int) ($dataModel['free_repeat_window_days'] ?? 7));
+		}
+
+		return max(0, (int) ($dataModel['daily_repeat_window_days'] ?? 7));
 	}
 
 	private function extractMarketTargetId(array $offers): ?int

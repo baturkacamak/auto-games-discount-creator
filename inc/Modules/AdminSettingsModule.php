@@ -236,9 +236,25 @@ class AdminSettingsModule extends AbstractModule
 			'agdc_data_model_section'
 		);
 
+		add_settings_field(
+			'agdc_daily_repeat_window_days',
+			__('Daily repeat window (days)', 'auto-games-discount-creator'),
+			[$this, 'renderDailyRepeatWindowField'],
+			'auto-games-discount-creator',
+			'agdc_data_model_section'
+		);
+
+		add_settings_field(
+			'agdc_free_repeat_window_days',
+			__('Free-game repeat window (days)', 'auto-games-discount-creator'),
+			[$this, 'renderFreeRepeatWindowField'],
+			'auto-games-discount-creator',
+			'agdc_data_model_section'
+		);
+
 		add_settings_section(
 			'agdc_queries_section',
-			__('Queries', 'auto-games-discount-creator'),
+			__('Legacy Query Import', 'auto-games-discount-creator'),
 			[$this, 'renderQueriesSection'],
 			'auto-games-discount-creator'
 		);
@@ -399,6 +415,8 @@ class AdminSettingsModule extends AbstractModule
 		$settings['data_model']['default_market_target_key'] = sanitize_key($input['data_model']['default_market_target_key'] ?? 'tr-tr');
 		$settings['data_model']['default_discount_store_key'] = sanitize_key($input['data_model']['default_discount_store_key'] ?? 'steam');
 		$settings['data_model']['default_free_store_key'] = sanitize_key($input['data_model']['default_free_store_key'] ?? 'epic');
+		$settings['data_model']['daily_repeat_window_days'] = max(0, absint($input['data_model']['daily_repeat_window_days'] ?? 7));
+		$settings['data_model']['free_repeat_window_days'] = max(0, absint($input['data_model']['free_repeat_window_days'] ?? 7));
 		$settings['source']['itad_session_token'] = sanitize_text_field($input['source']['itad_session_token'] ?? '');
 		$settings['source']['itad_session_cookie'] = sanitize_text_field($input['source']['itad_session_cookie'] ?? '');
 		$settings['source']['itad_visitor_cookie'] = sanitize_text_field($input['source']['itad_visitor_cookie'] ?? '');
@@ -623,37 +641,37 @@ class AdminSettingsModule extends AbstractModule
 	public function renderPostingSection(): void
 	{
 		echo '<span id="agdc_posting_section-title"></span>';
-		echo '<p>' . esc_html__('Default WordPress posting settings used by the automation flow.', 'auto-games-discount-creator') . '</p>';
+		echo '<p>' . esc_html__('Global WordPress posting defaults. In the current market-first flow, taxonomy naming is generated automatically per market/language; author and status are the most important values here.', 'auto-games-discount-creator') . '</p>';
 	}
 
 	public function renderDailyPostingSection(): void
 	{
 		echo '<span id="agdc_daily_posting_section-title"></span>';
-		echo '<p>' . esc_html__('Overrides used only for daily roundup posts.', 'auto-games-discount-creator') . '</p>';
+		echo '<p>' . esc_html__('Overrides used only for daily roundup posts. Category and tags here are now mostly legacy fallbacks because localized taxonomy is assigned automatically from the market target.', 'auto-games-discount-creator') . '</p>';
 	}
 
 	public function renderFreePostingSection(): void
 	{
 		echo '<span id="agdc_free_posting_section-title"></span>';
-		echo '<p>' . esc_html__('Overrides used only for free-game posts.', 'auto-games-discount-creator') . '</p>';
+		echo '<p>' . esc_html__('Overrides used only for free-game posts. Category and tags here are now mostly legacy fallbacks because localized taxonomy is assigned automatically from the market target.', 'auto-games-discount-creator') . '</p>';
 	}
 
 	public function renderQueriesSection(): void
 	{
 		echo '<span id="agdc_queries_section-title"></span>';
-		echo '<p>' . esc_html__('Enter one query per line. The plugin will regenerate internal query keys automatically.', 'auto-games-discount-creator') . '</p>';
+		echo '<p>' . esc_html__('These old Rambouillet query strings are kept only as a migration/reference layer. The live scraper no longer reads them directly after the JSON payload migration.', 'auto-games-discount-creator') . '</p>';
 	}
 
 	public function renderDataModelSection(): void
 	{
 		echo '<span id="agdc_data_model_section-title"></span>';
-		echo '<p>' . esc_html__('Choose the default market and fallback stores for the new multi-region offer model.', 'auto-games-discount-creator') . '</p>';
+		echo '<p>' . esc_html__('This section controls market-first behaviour: default market, fallback stores and repeat windows that stop the same game from being reposted too often in the same market.', 'auto-games-discount-creator') . '</p>';
 	}
 
 	public function renderSourceSection(): void
 	{
 		echo '<span id="agdc_source_section-title"></span>';
-		echo '<p>' . esc_html__('The scraper now bootstraps anonymous ITAD session data automatically from the browse page. Token and cookie fields below are optional overrides for debugging. Payloads should be JSON arrays containing request objects with gids and filter keys.', 'auto-games-discount-creator') . '</p>';
+		echo '<p>' . esc_html__('This is the active scraper configuration. The plugin auto-bootstraps an anonymous ITAD session; token and cookie fields below are only manual overrides for debugging. Daily and hourly JSON payload blocks are the runtime source of truth.', 'auto-games-discount-creator') . '</p>';
 	}
 
 	public function renderDebugSection(): void
@@ -842,6 +860,16 @@ class AdminSettingsModule extends AbstractModule
 		$this->renderStoreSelect('default_free_store_key');
 	}
 
+	public function renderDailyRepeatWindowField(): void
+	{
+		$this->renderRepeatWindowField('daily_repeat_window_days', __('Prevent the same game from appearing again in daily roundups for this many days.', 'auto-games-discount-creator'));
+	}
+
+	public function renderFreeRepeatWindowField(): void
+	{
+		$this->renderRepeatWindowField('free_repeat_window_days', __('Prevent the same free game from being reposted for this many days.', 'auto-games-discount-creator'));
+	}
+
 	public function renderDailyQueriesField(): void
 	{
 		$this->renderQueriesTextarea('daily_queries_text', 'daily');
@@ -1019,10 +1047,11 @@ class AdminSettingsModule extends AbstractModule
 	private function renderQueriesTextarea(string $fieldName, string $queryType): void
 	{
 		printf(
-			'<textarea class="large-text code" rows="10" name="%1$s[%2$s]">%3$s</textarea>',
+			'<textarea class="large-text code" rows="7" name="%1$s[%2$s]">%3$s</textarea><p class="description">%4$s</p>',
 			esc_attr(AGDC_SETTINGS_OPTION),
 			esc_attr($fieldName),
-			esc_textarea($this->implodeQueriesByType($queryType))
+			esc_textarea($this->implodeQueriesByType($queryType)),
+			esc_html__('Legacy only. Leave these alone unless you are intentionally comparing old string-based filters with the new JSON payload model.', 'auto-games-discount-creator')
 		);
 	}
 
@@ -1133,6 +1162,19 @@ class AdminSettingsModule extends AbstractModule
 			);
 		}
 		echo '</select>';
+	}
+
+	private function renderRepeatWindowField(string $settingKey, string $description): void
+	{
+		$settings = $this->settingsRepository->getAll();
+		$value = (int) ($settings['data_model'][$settingKey] ?? 7);
+		printf(
+			'<input type="number" class="small-text" min="0" step="1" name="%1$s[data_model][%2$s]" value="%3$d"> <p class="description">%4$s</p>',
+			esc_attr(AGDC_SETTINGS_OPTION),
+			esc_attr($settingKey),
+			$value,
+			esc_html($description)
+		);
 	}
 
 	private function sanitizePostingGroup(array $input, array $fallback): array
@@ -1267,7 +1309,8 @@ class AdminSettingsModule extends AbstractModule
 			.form-table textarea.code{min-height:180px}
 			.wrap .form-table{background:#fff;border:1px solid #dcdcde;border-radius:8px;margin:0 0 20px}
 			.wrap .form-table th,.wrap .form-table td{padding:16px}
-			.wrap h2{margin-top:28px;padding-top:12px;border-top:1px solid #dcdcde}
+			.agdc-tab-panels h2{margin-top:28px;padding-top:12px;border-top:1px solid #dcdcde}
+			.agdc-card h2{margin-top:0;padding-top:0;border-top:0}
 			.agdc-inline-code{font-family:monospace}
 			#agdc_general_section-title,
 			#agdc_posting_section-title,
@@ -1297,6 +1340,7 @@ class AdminSettingsModule extends AbstractModule
 					'Daily Posting': 'posting',
 					'Free Game Posting': 'posting',
 					'Data Model': 'data',
+					'Legacy Query Import': 'source',
 					'Queries': 'source',
 					'Source': 'source',
 					'Debug': 'debug'
@@ -1387,6 +1431,16 @@ class AdminSettingsModule extends AbstractModule
 
 				form.insertBefore(nav, panelsHost);
 
+				document.querySelectorAll('[data-agdc-tab-target]').forEach(function (link) {
+					link.addEventListener('click', function (event) {
+						event.preventDefault();
+						const target = link.getAttribute('data-agdc-tab-target');
+						if (target && Object.prototype.hasOwnProperty.call(tabLabels, target)) {
+							activateTab(target);
+						}
+					});
+				});
+
 				const initialHash = window.location.hash.replace('#agdc-tab-', '');
 				const initialTab = Object.prototype.hasOwnProperty.call(tabLabels, initialHash) ? initialHash : 'general';
 				activateTab(initialTab);
@@ -1449,16 +1503,13 @@ class AdminSettingsModule extends AbstractModule
 			</div>
 			<div class="agdc-card">
 				<h2><?php esc_html_e('Sections', 'auto-games-discount-creator'); ?></h2>
-				<p class="agdc-note"><?php esc_html_e('Jump directly to the part you want to edit. Source and Queries are the most advanced sections.', 'auto-games-discount-creator'); ?></p>
+				<p class="agdc-note"><?php esc_html_e('Use these shortcuts to switch tabs quickly. Source is the active scraper config. Legacy Query Import only mirrors the old string-based filters.', 'auto-games-discount-creator'); ?></p>
 				<p class="agdc-section-nav">
-					<a class="button-link" href="#agdc_general_section-title"><?php esc_html_e('General', 'auto-games-discount-creator'); ?></a>
-					<a class="button-link" href="#agdc_posting_section-title"><?php esc_html_e('Posting', 'auto-games-discount-creator'); ?></a>
-					<a class="button-link" href="#agdc_daily_posting_section-title"><?php esc_html_e('Daily', 'auto-games-discount-creator'); ?></a>
-					<a class="button-link" href="#agdc_free_posting_section-title"><?php esc_html_e('Free', 'auto-games-discount-creator'); ?></a>
-					<a class="button-link" href="#agdc_data_model_section-title"><?php esc_html_e('Data Model', 'auto-games-discount-creator'); ?></a>
-					<a class="button-link" href="#agdc_queries_section-title"><?php esc_html_e('Queries', 'auto-games-discount-creator'); ?></a>
-					<a class="button-link" href="#agdc_source_section-title"><?php esc_html_e('Source', 'auto-games-discount-creator'); ?></a>
-					<a class="button-link" href="#agdc_debug_section-title"><?php esc_html_e('Debug', 'auto-games-discount-creator'); ?></a>
+					<a class="button-link" href="#agdc-tab-general" data-agdc-tab-target="general"><?php esc_html_e('General', 'auto-games-discount-creator'); ?></a>
+					<a class="button-link" href="#agdc-tab-posting" data-agdc-tab-target="posting"><?php esc_html_e('Posting', 'auto-games-discount-creator'); ?></a>
+					<a class="button-link" href="#agdc-tab-data" data-agdc-tab-target="data"><?php esc_html_e('Data Model', 'auto-games-discount-creator'); ?></a>
+					<a class="button-link" href="#agdc-tab-source" data-agdc-tab-target="source"><?php esc_html_e('Source', 'auto-games-discount-creator'); ?></a>
+					<a class="button-link" href="#agdc-tab-debug" data-agdc-tab-target="debug"><?php esc_html_e('Debug', 'auto-games-discount-creator'); ?></a>
 				</p>
 			</div>
 		</div>
