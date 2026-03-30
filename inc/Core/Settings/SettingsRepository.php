@@ -76,7 +76,7 @@ class SettingsRepository
 					'default_discount_store_key' => 'steam',
 					'default_free_store_key' => 'epic',
 					'daily_repeat_window_days' => 7,
-					'free_repeat_window_days' => 7,
+					'free_repeat_window_days' => 0,
 				],
 				'source' => [
 					'itad_session_token' => '',

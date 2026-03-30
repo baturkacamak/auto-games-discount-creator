@@ -13,6 +13,12 @@ use Throwable;
 
 class AdminSettingsModule extends AbstractModule
 {
+	private const MENU_SLUG_DASHBOARD = 'auto-games-discount-creator';
+	private const MENU_SLUG_CATALOG = 'agdc-catalog';
+	private const MENU_SLUG_SETTINGS = 'agdc-settings';
+	private const GENERATED_POSTS_PER_PAGE = 12;
+	private const OFFERS_PER_PAGE = 20;
+
 	private SettingsRepository $settingsRepository;
 	private RuntimeStateRepository $runtimeStateRepository;
 	private OfferSelectionService $offerSelectionService;
@@ -37,11 +43,40 @@ class AdminSettingsModule extends AbstractModule
 
 	public function registerAdminPage(): void
 	{
-		add_options_page(
+		add_menu_page(
 			__('Auto Games Discount Creator', 'auto-games-discount-creator'),
 			__('Auto Games Discount Creator', 'auto-games-discount-creator'),
 			'manage_options',
-			'auto-games-discount-creator',
+			self::MENU_SLUG_DASHBOARD,
+			[$this, 'renderDashboardPage'],
+			'dashicons-store',
+			58
+		);
+
+		add_submenu_page(
+			self::MENU_SLUG_DASHBOARD,
+			__('Dashboard', 'auto-games-discount-creator'),
+			__('Dashboard', 'auto-games-discount-creator'),
+			'manage_options',
+			self::MENU_SLUG_DASHBOARD,
+			[$this, 'renderDashboardPage']
+		);
+
+		add_submenu_page(
+			self::MENU_SLUG_DASHBOARD,
+			__('Catalog', 'auto-games-discount-creator'),
+			__('Catalog', 'auto-games-discount-creator'),
+			'manage_options',
+			self::MENU_SLUG_CATALOG,
+			[$this, 'renderCatalogPage']
+		);
+
+		add_submenu_page(
+			self::MENU_SLUG_DASHBOARD,
+			__('Settings', 'auto-games-discount-creator'),
+			__('Settings', 'auto-games-discount-creator'),
+			'manage_options',
+			self::MENU_SLUG_SETTINGS,
 			[$this, 'renderSettingsPage']
 		);
 	}
@@ -357,7 +392,7 @@ class AdminSettingsModule extends AbstractModule
 		return $settings;
 	}
 
-	public function renderSettingsPage(): void
+	public function renderDashboardPage(): void
 	{
 		if (!current_user_can('manage_options')) {
 			return;
@@ -365,12 +400,44 @@ class AdminSettingsModule extends AbstractModule
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e('Auto Games Discount Creator', 'auto-games-discount-creator'); ?></h1>
+			<p><?php esc_html_e('Runtime status, manual actions and recent publishing activity.', 'auto-games-discount-creator'); ?></p>
+			<?php $this->renderPageStyles(); ?>
+			<?php $this->renderActionNotice(); ?>
+			<?php $this->renderStatusCards(); ?>
+			<?php $this->renderQuickActionsPanel(); ?>
+			<?php $this->renderObservabilityPanel(); ?>
+		</div>
+		<?php
+	}
+
+	public function renderCatalogPage(): void
+	{
+		if (!current_user_can('manage_options')) {
+			return;
+		}
+		?>
+		<div class="wrap">
+			<h1><?php esc_html_e('AGDC Catalog', 'auto-games-discount-creator'); ?></h1>
+			<p><?php esc_html_e('Latest raw games and offers stored in the AGDC tables.', 'auto-games-discount-creator'); ?></p>
+			<?php $this->renderPageStyles(); ?>
+			<?php $this->renderActionNotice(); ?>
+			<?php $this->renderCatalogPanel(); ?>
+		</div>
+		<?php
+	}
+
+	public function renderSettingsPage(): void
+	{
+		if (!current_user_can('manage_options')) {
+			return;
+		}
+		?>
+		<div class="wrap">
+			<h1><?php esc_html_e('AGDC Settings', 'auto-games-discount-creator'); ?></h1>
 			<p><?php esc_html_e('settings.json remains the code default. Values saved here override those defaults for this site.', 'auto-games-discount-creator'); ?></p>
 			<?php $this->renderPageStyles(); ?>
 			<?php $this->renderTabbedLayoutScript(); ?>
 			<?php $this->renderActionNotice(); ?>
-			<?php $this->renderStatusCards(); ?>
-			<?php $this->renderQuickActionsPanel(); ?>
 			<form action="options.php" method="post">
 				<?php
 				settings_fields('agdc_settings_group');
@@ -386,7 +453,7 @@ class AdminSettingsModule extends AbstractModule
 	{
 		$settings_link = sprintf(
 			'<a href="%s">%s</a>',
-			esc_url(admin_url('options-general.php?page=auto-games-discount-creator')),
+			esc_url($this->buildAdminPageUrl(self::MENU_SLUG_SETTINGS)),
 			esc_html__('Settings', 'auto-games-discount-creator')
 		);
 
@@ -785,7 +852,7 @@ class AdminSettingsModule extends AbstractModule
 
 	public function renderFreeRepeatWindowField(): void
 	{
-		$this->renderRepeatWindowField('free_repeat_window_days', __('Prevent the same free game from being reposted for this many days.', 'auto-games-discount-creator'));
+		$this->renderRepeatWindowField('free_repeat_window_days', __('0 only blocks duplicate free-game posts on the same day. Use a higher number to suppress reposting the same free game across multiple days.', 'auto-games-discount-creator'));
 	}
 
 	public function renderItadSessionTokenField(): void
@@ -1167,6 +1234,14 @@ class AdminSettingsModule extends AbstractModule
 			.agdc-tab-panels h2{margin-top:28px;padding-top:12px;border-top:1px solid #dcdcde}
 			.agdc-card h2{margin-top:0;padding-top:0;border-top:0}
 			.agdc-inline-code{font-family:monospace}
+			.agdc-table-wrap{overflow:auto;max-width:1100px}
+			.agdc-table{width:100%;border-collapse:collapse}
+			.agdc-table th,.agdc-table td{padding:10px 12px;border-top:1px solid #dcdcde;text-align:left;vertical-align:top}
+			.agdc-table thead th{border-top:0;font-size:12px;text-transform:uppercase;color:#50575e}
+			.agdc-pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef4ff;color:#1d4ed8;font-size:12px;font-weight:600}
+			.agdc-muted{color:#50575e}
+			.agdc-filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 12px}
+			.agdc-filters input[type="search"],.agdc-filters select{min-width:180px}
 			#agdc_general_section-title,
 			#agdc_posting_section-title,
 			#agdc_daily_posting_section-title,
@@ -1357,6 +1432,175 @@ class AdminSettingsModule extends AbstractModule
 		<?php
 	}
 
+	private function renderObservabilityPanel(): void
+	{
+		$currentPage = max(1, absint($_GET['agdc_generated_page'] ?? 1));
+		$recentPosts = $this->getRecentGeneratedPosts($currentPage, self::GENERATED_POSTS_PER_PAGE);
+		$totalRecentPosts = $this->getRecentGeneratedPostCount();
+		$totalGeneratedPages = max(1, (int) ceil($totalRecentPosts / self::GENERATED_POSTS_PER_PAGE));
+		$marketSummaries = $this->getGeneratedPostSummaries();
+		$marketRuns = $this->getMarketRunStates();
+		?>
+		<div class="agdc-card-grid">
+			<div class="agdc-card">
+				<h2><?php esc_html_e('Recent Generated Posts', 'auto-games-discount-creator'); ?></h2>
+				<p class="agdc-note"><?php esc_html_e('Latest AGDC content written to WordPress, without opening MySQL or phpMyAdmin.', 'auto-games-discount-creator'); ?></p>
+				<div class="agdc-table-wrap">
+					<table class="agdc-table">
+						<thead>
+							<tr>
+								<th><?php esc_html_e('When', 'auto-games-discount-creator'); ?></th>
+								<th><?php esc_html_e('Market', 'auto-games-discount-creator'); ?></th>
+								<th><?php esc_html_e('Kind', 'auto-games-discount-creator'); ?></th>
+								<th><?php esc_html_e('Post', 'auto-games-discount-creator'); ?></th>
+								<th><?php esc_html_e('Status', 'auto-games-discount-creator'); ?></th>
+							</tr>
+						</thead>
+						<tbody>
+							<?php if ($recentPosts === []) : ?>
+								<tr><td colspan="5" class="agdc-muted"><?php esc_html_e('No generated posts recorded yet.', 'auto-games-discount-creator'); ?></td></tr>
+							<?php else : ?>
+								<?php foreach ($recentPosts as $row) : ?>
+									<tr>
+										<td><?php echo esc_html((string) ($row['created_at'] ?? '')); ?></td>
+										<td><span class="agdc-pill"><?php echo esc_html((string) ($row['market_key'] ?? 'unknown')); ?></span></td>
+										<td><?php echo esc_html((string) ($row['content_kind'] ?? '')); ?></td>
+										<td>
+											<?php if (!empty($row['view_link']) && !empty($row['post_title'])) : ?>
+												<a href="<?php echo esc_url((string) $row['view_link']); ?>" target="_blank" rel="noopener"><?php echo esc_html((string) $row['post_title']); ?></a>
+											<?php else : ?>
+												<?php echo esc_html((string) ($row['post_title'] ?? '')); ?>
+											<?php endif; ?>
+										</td>
+										<td><?php echo esc_html((string) ($row['post_status'] ?? '')); ?></td>
+									</tr>
+								<?php endforeach; ?>
+							<?php endif; ?>
+						</tbody>
+					</table>
+				</div>
+				<?php $this->renderPagination('agdc_generated_page', $currentPage, $totalGeneratedPages, self::MENU_SLUG_DASHBOARD); ?>
+			</div>
+			<div class="agdc-card">
+				<h2><?php esc_html_e('Market Activity', 'auto-games-discount-creator'); ?></h2>
+				<p class="agdc-note"><?php esc_html_e('Last generated content timestamps per market and the latest recorded selection stats.', 'auto-games-discount-creator'); ?></p>
+				<div class="agdc-table-wrap">
+					<table class="agdc-table">
+						<thead>
+							<tr>
+								<th><?php esc_html_e('Market', 'auto-games-discount-creator'); ?></th>
+								<th><?php esc_html_e('Daily', 'auto-games-discount-creator'); ?></th>
+								<th><?php esc_html_e('Free', 'auto-games-discount-creator'); ?></th>
+								<th><?php esc_html_e('Last Daily Run', 'auto-games-discount-creator'); ?></th>
+								<th><?php esc_html_e('Last Hourly Run', 'auto-games-discount-creator'); ?></th>
+							</tr>
+						</thead>
+						<tbody>
+							<?php if ($marketSummaries === []) : ?>
+								<tr><td colspan="5" class="agdc-muted"><?php esc_html_e('No market activity found.', 'auto-games-discount-creator'); ?></td></tr>
+							<?php else : ?>
+								<?php foreach ($marketSummaries as $marketKey => $summary) : ?>
+									<tr>
+										<td><span class="agdc-pill"><?php echo esc_html($marketKey); ?></span></td>
+										<td><?php echo esc_html($summary['discount_roundup'] ?? ''); ?></td>
+										<td><?php echo esc_html($summary['free_game'] ?? ''); ?></td>
+										<td><?php echo esc_html($marketRuns['daily'][$marketKey] ?? __('No run state yet.', 'auto-games-discount-creator')); ?></td>
+										<td><?php echo esc_html($marketRuns['hourly'][$marketKey] ?? __('No run state yet.', 'auto-games-discount-creator')); ?></td>
+									</tr>
+								<?php endforeach; ?>
+							<?php endif; ?>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+		<?php
+	}
+
+	private function renderCatalogPanel(): void
+	{
+		$currentPage = max(1, absint($_GET['agdc_catalog_page'] ?? 1));
+		$filters = $this->getCatalogFiltersFromRequest();
+		$latestOffers = $this->getLatestOffers($currentPage, self::OFFERS_PER_PAGE, $filters);
+		$totalOffers = $this->getOfferCount($filters);
+		$totalCatalogPages = max(1, (int) ceil($totalOffers / self::OFFERS_PER_PAGE));
+		$filterOptions = $this->getCatalogFilterOptions();
+		?>
+		<div class="agdc-card-grid">
+			<div class="agdc-card">
+				<h2><?php esc_html_e('Latest Offer Catalog', 'auto-games-discount-creator'); ?></h2>
+				<p class="agdc-note"><?php esc_html_e('Raw game and offer data currently stored in AGDC tables, including store, market, price and last seen time.', 'auto-games-discount-creator'); ?></p>
+				<form method="get" action="<?php echo esc_url(admin_url('admin.php')); ?>" class="agdc-filters">
+					<input type="hidden" name="page" value="<?php echo esc_attr(self::MENU_SLUG_CATALOG); ?>">
+					<label>
+						<span class="screen-reader-text"><?php esc_html_e('Search games', 'auto-games-discount-creator'); ?></span>
+						<input type="search" name="agdc_q" value="<?php echo esc_attr($filters['search']); ?>" placeholder="<?php esc_attr_e('Search game title', 'auto-games-discount-creator'); ?>">
+					</label>
+					<select name="agdc_market">
+						<option value=""><?php esc_html_e('All markets', 'auto-games-discount-creator'); ?></option>
+						<?php foreach ($filterOptions['markets'] as $marketKey) : ?>
+							<option value="<?php echo esc_attr($marketKey); ?>" <?php selected($filters['market'], $marketKey); ?>><?php echo esc_html($marketKey); ?></option>
+						<?php endforeach; ?>
+					</select>
+					<select name="agdc_store">
+						<option value=""><?php esc_html_e('All stores', 'auto-games-discount-creator'); ?></option>
+						<?php foreach ($filterOptions['stores'] as $storeName) : ?>
+							<option value="<?php echo esc_attr($storeName); ?>" <?php selected($filters['store'], $storeName); ?>><?php echo esc_html($storeName); ?></option>
+						<?php endforeach; ?>
+					</select>
+					<select name="agdc_kind">
+						<option value=""><?php esc_html_e('All types', 'auto-games-discount-creator'); ?></option>
+						<option value="free" <?php selected($filters['kind'], 'free'); ?>><?php esc_html_e('Free', 'auto-games-discount-creator'); ?></option>
+						<option value="discount" <?php selected($filters['kind'], 'discount'); ?>><?php esc_html_e('Discount', 'auto-games-discount-creator'); ?></option>
+					</select>
+					<button type="submit" class="button button-secondary"><?php esc_html_e('Filter', 'auto-games-discount-creator'); ?></button>
+				</form>
+				<div class="agdc-table-wrap">
+					<table class="agdc-table">
+						<thead>
+							<tr>
+								<th><?php esc_html_e('Game', 'auto-games-discount-creator'); ?></th>
+								<th><?php esc_html_e('Store', 'auto-games-discount-creator'); ?></th>
+								<th><?php esc_html_e('Market', 'auto-games-discount-creator'); ?></th>
+								<th><?php esc_html_e('Type', 'auto-games-discount-creator'); ?></th>
+								<th><?php esc_html_e('Price', 'auto-games-discount-creator'); ?></th>
+								<th><?php esc_html_e('Discount', 'auto-games-discount-creator'); ?></th>
+								<th><?php esc_html_e('Posts', 'auto-games-discount-creator'); ?></th>
+								<th><?php esc_html_e('Last Seen', 'auto-games-discount-creator'); ?></th>
+							</tr>
+						</thead>
+						<tbody>
+							<?php if ($latestOffers === []) : ?>
+								<tr><td colspan="8" class="agdc-muted"><?php esc_html_e('No offer rows found yet.', 'auto-games-discount-creator'); ?></td></tr>
+							<?php else : ?>
+								<?php foreach ($latestOffers as $row) : ?>
+									<tr>
+										<td>
+											<?php if (!empty($row['deeplink_url'])) : ?>
+												<a href="<?php echo esc_url((string) $row['deeplink_url']); ?>" target="_blank" rel="noopener"><?php echo esc_html((string) ($row['canonical_name'] ?? '')); ?></a>
+											<?php else : ?>
+												<?php echo esc_html((string) ($row['canonical_name'] ?? '')); ?>
+											<?php endif; ?>
+										</td>
+										<td><?php echo esc_html((string) ($row['store_name'] ?? '')); ?></td>
+										<td><span class="agdc-pill"><?php echo esc_html((string) ($row['market_key'] ?? 'global')); ?></span></td>
+										<td><?php echo esc_html(!empty($row['is_free']) ? __('Free', 'auto-games-discount-creator') : (string) ($row['offer_type'] ?? 'discount')); ?></td>
+										<td><?php echo esc_html($this->formatOfferPrice($row)); ?></td>
+										<td><?php echo esc_html($this->formatOfferDiscount($row)); ?></td>
+										<td><?php echo wp_kses_post($this->renderOfferLinkedPosts((string) ($row['linked_posts'] ?? ''))); ?></td>
+										<td><?php echo esc_html((string) ($row['last_seen_at'] ?? '')); ?></td>
+									</tr>
+								<?php endforeach; ?>
+							<?php endif; ?>
+						</tbody>
+					</table>
+				</div>
+				<?php $this->renderPagination('agdc_catalog_page', $currentPage, $totalCatalogPages, self::MENU_SLUG_CATALOG); ?>
+			</div>
+		</div>
+		<?php
+	}
+
 	private function renderStatusCards(): void
 	{
 		$settings = $this->settingsRepository->getAll();
@@ -1392,16 +1636,391 @@ class AdminSettingsModule extends AbstractModule
 		<?php
 	}
 
+	private function getRecentGeneratedPosts(int $page = 1, int $perPage = self::GENERATED_POSTS_PER_PAGE): array
+	{
+		global $wpdb;
+
+		$generatedPostsTable = $wpdb->prefix . 'agdc_generated_posts';
+		$marketTargetsTable = $wpdb->prefix . 'agdc_market_targets';
+		$perPage = max(1, (int) $perPage);
+		$offset = max(0, ($page - 1) * $perPage);
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT gp.wp_post_id, gp.content_kind, gp.post_status, gp.created_at, mt.market_key, p.post_title
+				FROM {$generatedPostsTable} gp
+				LEFT JOIN {$marketTargetsTable} mt ON mt.id = gp.market_target_id
+				LEFT JOIN {$wpdb->posts} p ON p.ID = gp.wp_post_id
+				WHERE gp.wp_post_id IS NOT NULL
+				GROUP BY gp.wp_post_id, gp.content_kind, gp.post_status, gp.created_at, mt.market_key, p.post_title
+				ORDER BY gp.created_at DESC
+				LIMIT %d OFFSET %d",
+				$perPage,
+				$offset
+			),
+			ARRAY_A
+		);
+
+		if (!is_array($rows)) {
+			return [];
+		}
+
+		foreach ($rows as &$row) {
+			$postId = (int) ($row['wp_post_id'] ?? 0);
+			$row['view_link'] = $postId > 0 ? get_permalink($postId) : '';
+		}
+
+		return $rows;
+	}
+
+	private function getRecentGeneratedPostCount(): int
+	{
+		global $wpdb;
+
+		$generatedPostsTable = $wpdb->prefix . 'agdc_generated_posts';
+
+		return (int) $wpdb->get_var(
+			"SELECT COUNT(DISTINCT wp_post_id) FROM {$generatedPostsTable} WHERE wp_post_id IS NOT NULL"
+		);
+	}
+
+	private function getGeneratedPostSummaries(): array
+	{
+		global $wpdb;
+
+		$generatedPostsTable = $wpdb->prefix . 'agdc_generated_posts';
+		$marketTargetsTable = $wpdb->prefix . 'agdc_market_targets';
+		$rows = $wpdb->get_results(
+			"SELECT mt.market_key, gp.content_kind, COUNT(*) AS total_rows, MAX(COALESCE(gp.published_at, gp.created_at)) AS last_created
+			FROM {$generatedPostsTable} gp
+			LEFT JOIN {$marketTargetsTable} mt ON mt.id = gp.market_target_id
+			GROUP BY mt.market_key, gp.content_kind
+			ORDER BY mt.market_key ASC, gp.content_kind ASC",
+			ARRAY_A
+		);
+
+		if (!is_array($rows)) {
+			return [];
+		}
+
+		$summaries = [];
+		foreach ($rows as $row) {
+			$marketKey = (string) ($row['market_key'] ?? 'unknown');
+			$contentKind = (string) ($row['content_kind'] ?? 'unknown');
+			$summaries[$marketKey] ??= [];
+			$summaries[$marketKey][$contentKind] = sprintf(
+				'%s | total=%d',
+				(string) ($row['last_created'] ?? ''),
+				(int) ($row['total_rows'] ?? 0)
+			);
+		}
+
+		ksort($summaries);
+
+		return $summaries;
+	}
+
+	private function getMarketRunStates(): array
+	{
+		$state = $this->runtimeStateRepository->getAll();
+		$lastRun = is_array($state['last_run'] ?? null) ? $state['last_run'] : [];
+		$result = [
+			'daily' => [],
+			'hourly' => [],
+		];
+
+		foreach ($lastRun as $key => $run) {
+			if (!is_array($run) || strpos((string) $key, 'task:') !== 0) {
+				continue;
+			}
+
+			$parts = explode(':', (string) $key, 3);
+			if (count($parts) !== 3) {
+				continue;
+			}
+
+			[, $type, $marketKey] = $parts;
+			if (!isset($result[$type])) {
+				continue;
+			}
+
+			$result[$type][$marketKey] = $this->formatSelectionState($run);
+		}
+
+		return $result;
+	}
+
+	private function getLatestOffers(int $page = 1, int $perPage = self::OFFERS_PER_PAGE, array $filters = []): array
+	{
+		global $wpdb;
+
+		$offersTable = $wpdb->prefix . 'agdc_offers';
+		$gamesTable = $wpdb->prefix . 'agdc_games';
+		$storesTable = $wpdb->prefix . 'agdc_stores';
+		$marketTargetsTable = $wpdb->prefix . 'agdc_market_targets';
+		$generatedPostsTable = $wpdb->prefix . 'agdc_generated_posts';
+		$perPage = max(1, (int) $perPage);
+		$offset = max(0, ($page - 1) * $perPage);
+		[$whereSql, $whereParams] = $this->buildOfferFilterSql($filters);
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT o.id, g.canonical_name, s.store_name, mt.market_key, o.offer_type, o.is_free, o.currency_code,
+					o.regular_price_amount, o.sale_price_amount, o.discount_percent, o.deeplink_url, o.last_seen_at,
+					GROUP_CONCAT(DISTINCT CONCAT(gp.wp_post_id, '::', COALESCE(p.post_title, '')) ORDER BY gp.wp_post_id DESC SEPARATOR '||') AS linked_posts
+				FROM {$offersTable} o
+				LEFT JOIN {$gamesTable} g ON g.id = o.game_id
+				LEFT JOIN {$storesTable} s ON s.id = o.store_id
+				LEFT JOIN {$marketTargetsTable} mt ON mt.id = o.market_target_id
+				LEFT JOIN {$generatedPostsTable} gp ON gp.offer_id = o.id
+				LEFT JOIN {$wpdb->posts} p ON p.ID = gp.wp_post_id
+				{$whereSql}
+				GROUP BY o.id, g.canonical_name, s.store_name, mt.market_key, o.offer_type, o.is_free, o.currency_code,
+					o.regular_price_amount, o.sale_price_amount, o.discount_percent, o.deeplink_url, o.last_seen_at
+				ORDER BY o.last_seen_at DESC, o.id DESC
+				LIMIT %d OFFSET %d",
+				array_merge($whereParams, [$perPage, $offset])
+			),
+			ARRAY_A
+		);
+
+		return is_array($rows) ? $rows : [];
+	}
+
+	private function getOfferCount(array $filters = []): int
+	{
+		global $wpdb;
+
+		$offersTable = $wpdb->prefix . 'agdc_offers';
+		$gamesTable = $wpdb->prefix . 'agdc_games';
+		$storesTable = $wpdb->prefix . 'agdc_stores';
+		$marketTargetsTable = $wpdb->prefix . 'agdc_market_targets';
+		[$whereSql, $whereParams] = $this->buildOfferFilterSql($filters);
+
+		return (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) 
+				FROM {$offersTable} o
+				LEFT JOIN {$gamesTable} g ON g.id = o.game_id
+				LEFT JOIN {$storesTable} s ON s.id = o.store_id
+				LEFT JOIN {$marketTargetsTable} mt ON mt.id = o.market_target_id
+				{$whereSql}",
+				$whereParams
+			)
+		);
+	}
+
+	private function getCatalogFiltersFromRequest(): array
+	{
+		return [
+			'search' => sanitize_text_field(wp_unslash($_GET['agdc_q'] ?? '')),
+			'market' => sanitize_text_field(wp_unslash($_GET['agdc_market'] ?? '')),
+			'store' => sanitize_text_field(wp_unslash($_GET['agdc_store'] ?? '')),
+			'kind' => sanitize_key($_GET['agdc_kind'] ?? ''),
+		];
+	}
+
+	private function getCatalogFilterOptions(): array
+	{
+		global $wpdb;
+
+		$offersTable = $wpdb->prefix . 'agdc_offers';
+		$storesTable = $wpdb->prefix . 'agdc_stores';
+		$marketTargetsTable = $wpdb->prefix . 'agdc_market_targets';
+
+		$markets = $wpdb->get_col(
+			"SELECT DISTINCT mt.market_key
+			FROM {$offersTable} o
+			LEFT JOIN {$marketTargetsTable} mt ON mt.id = o.market_target_id
+			WHERE mt.market_key IS NOT NULL AND mt.market_key <> ''
+			ORDER BY mt.market_key ASC"
+		);
+		$stores = $wpdb->get_col(
+			"SELECT DISTINCT s.store_name
+			FROM {$offersTable} o
+			LEFT JOIN {$storesTable} s ON s.id = o.store_id
+			WHERE s.store_name IS NOT NULL AND s.store_name <> ''
+			ORDER BY s.store_name ASC"
+		);
+
+		return [
+			'markets' => is_array($markets) ? $markets : [],
+			'stores' => is_array($stores) ? $stores : [],
+		];
+	}
+
+	private function buildOfferFilterSql(array $filters): array
+	{
+		$where = [];
+		$params = [];
+
+		$search = trim((string) ($filters['search'] ?? ''));
+		if ($search !== '') {
+			$where[] = 'g.canonical_name LIKE %s';
+			$params[] = '%' . $this->escLike($search) . '%';
+		}
+
+		$market = trim((string) ($filters['market'] ?? ''));
+		if ($market !== '') {
+			$where[] = 'mt.market_key = %s';
+			$params[] = $market;
+		}
+
+		$store = trim((string) ($filters['store'] ?? ''));
+		if ($store !== '') {
+			$where[] = 's.store_name = %s';
+			$params[] = $store;
+		}
+
+		$kind = (string) ($filters['kind'] ?? '');
+		if ($kind === 'free') {
+			$where[] = 'o.is_free = 1';
+		} elseif ($kind === 'discount') {
+			$where[] = 'o.is_free = 0';
+		}
+
+		return [
+			$where !== [] ? 'WHERE ' . implode(' AND ', $where) : '',
+			$params,
+		];
+	}
+
+	private function escLike(string $value): string
+	{
+		global $wpdb;
+
+		return $wpdb->esc_like($value);
+	}
+
+	private function formatOfferPrice(array $row): string
+	{
+		$currency = (string) ($row['currency_code'] ?? '');
+		$sale = $row['sale_price_amount'];
+		$regular = $row['regular_price_amount'];
+
+		if (!empty($row['is_free'])) {
+			return sprintf('%s %s', __('Free', 'auto-games-discount-creator'), $currency);
+		}
+
+		if ($sale !== null && $regular !== null && (float) $regular > (float) $sale) {
+			return sprintf('%s %s (%s %s)', (string) $sale, $currency, (string) $regular, $currency);
+		}
+
+		if ($sale !== null) {
+			return sprintf('%s %s', (string) $sale, $currency);
+		}
+
+		if ($regular !== null) {
+			return sprintf('%s %s', (string) $regular, $currency);
+		}
+
+		return __('Unknown', 'auto-games-discount-creator');
+	}
+
+	private function formatOfferDiscount(array $row): string
+	{
+		if (!empty($row['is_free'])) {
+			return '100%';
+		}
+
+		if ($row['discount_percent'] === null || $row['discount_percent'] === '') {
+			return '0%';
+		}
+
+		return rtrim(rtrim((string) $row['discount_percent'], '0'), '.') . '%';
+	}
+
+	private function renderOfferLinkedPosts(string $rawLinkedPosts): string
+	{
+		$rawLinkedPosts = trim($rawLinkedPosts);
+		if ($rawLinkedPosts === '') {
+			return esc_html__('Not posted yet', 'auto-games-discount-creator');
+		}
+
+		$items = [];
+		foreach (explode('||', $rawLinkedPosts) as $entry) {
+			[$postId, $postTitle] = array_pad(explode('::', $entry, 2), 2, '');
+			$postId = (int) $postId;
+			if ($postId <= 0) {
+				continue;
+			}
+
+			$items[] = sprintf(
+				'<a href="%s" target="_blank" rel="noopener">%s</a>',
+				esc_url(get_permalink($postId)),
+				esc_html($postTitle !== '' ? $postTitle : ('#' . $postId))
+			);
+		}
+
+		if ($items === []) {
+			return esc_html__('Not posted yet', 'auto-games-discount-creator');
+		}
+
+		return implode('<br>', $items);
+	}
+
 	private function buildSettingsPageUrl(string $noticeType, string $noticeMessage): string
 	{
-		return add_query_arg(
+		return $this->buildAdminPageUrl(
+			self::MENU_SLUG_DASHBOARD,
 			[
-				'page' => 'auto-games-discount-creator',
 				'agdc_notice_type' => $noticeType,
 				'agdc_notice' => $noticeMessage,
-			],
-			admin_url('options-general.php')
+			]
 		);
+	}
+
+	private function buildAdminPageUrl(string $pageSlug, array $args = []): string
+	{
+		return add_query_arg(
+			array_merge(
+				[
+					'page' => $pageSlug,
+				],
+				$args
+			),
+			admin_url('admin.php')
+		);
+	}
+
+	private function renderPagination(string $queryArg, int $currentPage, int $totalPages, string $pageSlug): void
+	{
+		if ($totalPages <= 1) {
+			return;
+		}
+
+		$baseArgs = $_GET;
+		unset($baseArgs[$queryArg], $baseArgs['_wp_http_referer']);
+		$links = paginate_links(
+			[
+				'base' => add_query_arg(
+					array_merge(
+						$baseArgs,
+						[
+							'page' => $pageSlug,
+							$queryArg => '%#%',
+						]
+					),
+					admin_url('admin.php')
+				),
+				'format' => '',
+				'current' => max(1, $currentPage),
+				'total' => max(1, $totalPages),
+				'type' => 'array',
+				'prev_text' => __('« Prev', 'auto-games-discount-creator'),
+				'next_text' => __('Next »', 'auto-games-discount-creator'),
+			]
+		);
+
+		if (!is_array($links) || $links === []) {
+			return;
+		}
+
+		echo '<div class="tablenav"><div class="tablenav-pages">';
+		foreach ($links as $link) {
+			echo wp_kses_post($link . ' ');
+		}
+		echo '</div></div>';
 	}
 
 	private function formatRunState(array $run): string

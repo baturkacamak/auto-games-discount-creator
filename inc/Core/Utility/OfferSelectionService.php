@@ -163,13 +163,13 @@ class OfferSelectionService
 		}
 
 		$marketTargetId = $this->extractMarketTargetId($offers);
-		$posted_offer_ids = $this->getPostedOfferIds(array_column($offers, 'offer_id'), 'free_game', $marketTargetId);
-		$recently_posted_game_ids = $this->getRecentlyPostedGameIds(
-			array_column($offers, 'game_id'),
-			'free_game',
-			$marketTargetId,
-			$this->getRepeatWindowDays('free_game')
-		);
+		$freeRepeatWindowDays = $this->getRepeatWindowDays('free_game');
+		$posted_offer_ids = $freeRepeatWindowDays > 0
+			? $this->getHourlyBlockedOfferIds(array_column($offers, 'offer_id'), $marketTargetId)
+			: [];
+		$recently_posted_game_ids = $freeRepeatWindowDays > 0
+			? $this->getHourlyBlockedGameIds(array_column($offers, 'game_id'), $marketTargetId)
+			: [];
 		$summary['already_posted'] = count(
 			array_filter(
 				$offers,
@@ -191,7 +191,7 @@ class OfferSelectionService
 			$unique_keys[$this->getGameGroupKey($offer)] = true;
 		}
 
-		$summary['selected'] = count($remaining) > 0 ? 1 : 0;
+		$summary['selected'] = count($unique_keys);
 		$summary['duplicates_removed'] = max(0, count($remaining) - count($unique_keys));
 
 		return $summary;
@@ -212,13 +212,13 @@ class OfferSelectionService
 		}
 
 		$marketTargetId = $this->extractMarketTargetId($offers);
-		$posted_offer_ids = $this->getPostedOfferIds(array_column($offers, 'offer_id'), 'free_game', $marketTargetId);
-		$recently_posted_game_ids = $this->getRecentlyPostedGameIds(
-			array_column($offers, 'game_id'),
-			'free_game',
-			$marketTargetId,
-			$this->getRepeatWindowDays('free_game')
-		);
+		$freeRepeatWindowDays = $this->getRepeatWindowDays('free_game');
+		$posted_offer_ids = $freeRepeatWindowDays > 0
+			? $this->getHourlyBlockedOfferIds(array_column($offers, 'offer_id'), $marketTargetId)
+			: [];
+		$recently_posted_game_ids = $freeRepeatWindowDays > 0
+			? $this->getHourlyBlockedGameIds(array_column($offers, 'game_id'), $marketTargetId)
+			: [];
 		$seen_games = [];
 		$selected = [];
 
@@ -240,7 +240,6 @@ class OfferSelectionService
 
 			$seen_games[$group_key] = true;
 			$selected[] = $offer;
-			break;
 		}
 
 		return $selected;
@@ -272,6 +271,48 @@ class OfferSelectionService
 			$query = $wpdb->prepare(
 				"SELECT DISTINCT offer_id FROM {$table} WHERE content_kind = %s AND offer_id IN ({$placeholders})",
 				array_merge([$contentKind], $offer_ids)
+			);
+		}
+
+		$results = $wpdb->get_col($query);
+
+		return array_map('intval', is_array($results) ? $results : []);
+	}
+
+	private function getPostedOfferIdsSince(array $offerIds, string $contentKind, ?int $marketTargetId, string $threshold): array
+	{
+		global $wpdb;
+
+		$offer_ids = array_values(
+			array_filter(
+				array_map('intval', $offerIds),
+				static fn(int $offer_id): bool => $offer_id > 0
+			)
+		);
+
+		if ($offer_ids === []) {
+			return [];
+		}
+
+		$placeholders = implode(', ', array_fill(0, count($offer_ids), '%d'));
+		$table = $wpdb->prefix . 'agdc_generated_posts';
+
+		if ($marketTargetId !== null && $marketTargetId > 0) {
+			$query = $wpdb->prepare(
+				"SELECT DISTINCT offer_id FROM {$table}
+				WHERE content_kind = %s
+					AND market_target_id = %d
+					AND offer_id IN ({$placeholders})
+					AND COALESCE(published_at, created_at) >= %s",
+				array_merge([$contentKind, $marketTargetId], $offer_ids, [$threshold])
+			);
+		} else {
+			$query = $wpdb->prepare(
+				"SELECT DISTINCT offer_id FROM {$table}
+				WHERE content_kind = %s
+					AND offer_id IN ({$placeholders})
+					AND COALESCE(published_at, created_at) >= %s",
+				array_merge([$contentKind], $offer_ids, [$threshold])
 			);
 		}
 
@@ -327,6 +368,48 @@ class OfferSelectionService
 		return array_map('intval', is_array($results) ? $results : []);
 	}
 
+	private function getPostedGameIdsSince(array $gameIds, string $contentKind, ?int $marketTargetId, string $threshold): array
+	{
+		global $wpdb;
+
+		$gameIds = array_values(
+			array_filter(
+				array_map('intval', $gameIds),
+				static fn(int $gameId): bool => $gameId > 0
+			)
+		);
+
+		if ($gameIds === []) {
+			return [];
+		}
+
+		$placeholders = implode(', ', array_fill(0, count($gameIds), '%d'));
+		$table = $wpdb->prefix . 'agdc_generated_posts';
+
+		if ($marketTargetId !== null && $marketTargetId > 0) {
+			$query = $wpdb->prepare(
+				"SELECT DISTINCT game_id FROM {$table}
+				WHERE content_kind = %s
+					AND market_target_id = %d
+					AND game_id IN ({$placeholders})
+					AND COALESCE(published_at, created_at) >= %s",
+				array_merge([$contentKind, $marketTargetId], $gameIds, [$threshold])
+			);
+		} else {
+			$query = $wpdb->prepare(
+				"SELECT DISTINCT game_id FROM {$table}
+				WHERE content_kind = %s
+					AND game_id IN ({$placeholders})
+					AND COALESCE(published_at, created_at) >= %s",
+				array_merge([$contentKind], $gameIds, [$threshold])
+			);
+		}
+
+		$results = $wpdb->get_col($query);
+
+		return array_map('intval', is_array($results) ? $results : []);
+	}
+
 	private function getRepeatWindowDays(string $contentKind): int
 	{
 		$dataModel = is_array($this->settings['data_model'] ?? null) ? $this->settings['data_model'] : [];
@@ -336,6 +419,38 @@ class OfferSelectionService
 		}
 
 		return max(0, (int) ($dataModel['daily_repeat_window_days'] ?? 7));
+	}
+
+	private function getHourlyBlockedOfferIds(array $offerIds, ?int $marketTargetId): array
+	{
+		return $this->getPostedOfferIdsSince(
+			$offerIds,
+			'free_game',
+			$marketTargetId,
+			$this->getFreeGameRepeatThreshold()
+		);
+	}
+
+	private function getHourlyBlockedGameIds(array $gameIds, ?int $marketTargetId): array
+	{
+		return $this->getPostedGameIdsSince(
+			$gameIds,
+			'free_game',
+			$marketTargetId,
+			$this->getFreeGameRepeatThreshold()
+		);
+	}
+
+	private function getFreeGameRepeatThreshold(): string
+	{
+		$windowDays = $this->getRepeatWindowDays('free_game');
+		$currentTimestamp = current_time('timestamp');
+
+		if ($windowDays <= 0) {
+			return wp_date('Y-m-d 00:00:00', $currentTimestamp);
+		}
+
+		return wp_date('Y-m-d H:i:s', $currentTimestamp - ($windowDays * DAY_IN_SECONDS));
 	}
 
 	private function extractMarketTargetId(array $offers): ?int

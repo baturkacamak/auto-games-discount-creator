@@ -29,6 +29,7 @@ class ScheduleModule extends AbstractModule
 {
 	private const DAILY_MARKET_HOOK = 'agdc_run_daily_market';
 	private const HOURLY_MARKET_HOOK = 'agdc_run_hourly_market';
+	private const MARKET_QUEUE_INITIAL_DELAY_SECONDS = 90;
 	private const DAILY_MARKET_STAGGER_SECONDS = 8 * MINUTE_IN_SECONDS;
 	private const HOURLY_MARKET_STAGGER_SECONDS = 5 * MINUTE_IN_SECONDS;
 	private const MANUAL_MARKET_PAUSE_MICROSECONDS = 1500000;
@@ -98,8 +99,13 @@ class ScheduleModule extends AbstractModule
 				return;
 			}
 
-			$this->runDailyTargets([$target], false);
+			$summary = $this->runDailyTargets([$target], false);
+			$this->runtimeStateRepository->markRunSuccess(
+				'daily:' . $marketKey,
+				$this->extractMarketRunMeta($summary, $marketKey)
+			);
 		} catch (Throwable $throwable) {
+			$this->runtimeStateRepository->markRunFailure('daily:' . $marketKey, $throwable->getMessage());
 			error_log('AGDC daily market task failed for ' . $marketKey . ': ' . $throwable->getMessage());
 		}
 	}
@@ -161,8 +167,13 @@ class ScheduleModule extends AbstractModule
 				return;
 			}
 
-			$this->runHourlyTargets([$target], false);
+			$summary = $this->runHourlyTargets([$target], false);
+			$this->runtimeStateRepository->markRunSuccess(
+				'hourly:' . $marketKey,
+				$this->extractMarketRunMeta($summary, $marketKey)
+			);
 		} catch (Throwable $throwable) {
+			$this->runtimeStateRepository->markRunFailure('hourly:' . $marketKey, $throwable->getMessage());
 			error_log('AGDC hourly market task failed for ' . $marketKey . ': ' . $throwable->getMessage());
 		}
 	}
@@ -253,7 +264,7 @@ class ScheduleModule extends AbstractModule
 	private function queueMarketRuns(string $hook, array $targets, int $staggerSeconds): array
 	{
 		$queued = [];
-		$timestamp = time();
+		$timestamp = time() + self::MARKET_QUEUE_INITIAL_DELAY_SECONDS;
 
 		foreach ($targets as $index => $target) {
 			$marketKey = (string) ($target['market_key'] ?? '');
@@ -307,5 +318,18 @@ class ScheduleModule extends AbstractModule
 	private function isAutomationEnabled(): bool
 	{
 		return !empty((new SettingsRepository())->getAll()['general']['enabled']);
+	}
+
+	private function extractMarketRunMeta(array $summary, string $marketKey): array
+	{
+		$marketSummary = is_array($summary['markets'][$marketKey] ?? null) ? $summary['markets'][$marketKey] : [];
+
+		return array_merge(
+			[
+				'market' => $marketKey,
+				'items' => (int) ($marketSummary['items'] ?? ($summary['items'] ?? 0)),
+			],
+			$marketSummary
+		);
 	}
 }

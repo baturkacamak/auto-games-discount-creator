@@ -172,7 +172,7 @@ class SeoModule extends AbstractModule
 			'@type' => 'WebSite',
 			'name' => get_bloginfo('name'),
 			'url' => home_url('/'),
-			'description' => get_bloginfo('description'),
+			'description' => $this->getLocalizedSiteDescription((string) ($marketTarget['language_code'] ?? 'en')),
 			'inLanguage' => $locale,
 		];
 
@@ -214,7 +214,7 @@ class SeoModule extends AbstractModule
 			}
 		}
 
-		if ($post->post_type === 'agdc_roundup' && get_post_meta($post->ID, '_agdc_content_kind', true) === 'free_game') {
+		if ($post->post_type === 'agdc_roundup') {
 			$graph[] = [
 				'@context' => 'https://schema.org',
 				'@type' => 'BlogPosting',
@@ -354,6 +354,15 @@ class SeoModule extends AbstractModule
 	private function getRoundupImage(array $snapshot): string
 	{
 		$games = is_array($snapshot['games'] ?? null) ? $snapshot['games'] : [];
+		$featuredGame = $this->getFeaturedRoundupGame($games);
+
+		if (is_array($featuredGame)) {
+			$image = (string) ($featuredGame['resolved_image_url'] ?? '');
+			if ($image !== '') {
+				return $image;
+			}
+		}
+
 		foreach ($games as $game) {
 			if (!is_array($game)) {
 				continue;
@@ -442,6 +451,7 @@ class SeoModule extends AbstractModule
 	{
 		$repo = new MarketTargetRepository();
 		$defaultKey = (string) ($repo->getDefaultTarget()['key'] ?? '');
+		$defaultLanguage = apply_filters('wpml_default_language', null);
 		$fallbackPost = null;
 
 		foreach ($translations as $translation) {
@@ -456,6 +466,13 @@ class SeoModule extends AbstractModule
 
 			if ($fallbackPost === null) {
 				$fallbackPost = $translatedPost;
+			}
+
+			if (is_string($defaultLanguage) && $defaultLanguage !== '' && strtolower((string) $translation->language_code) === strtolower($defaultLanguage)) {
+				return [
+					'hreflang' => 'x-default',
+					'url' => $this->buildAlternateUrl($translatedPost),
+				];
 			}
 
 			$marketKey = (string) get_post_meta($translatedPost->ID, '_agdc_market_key', true);
@@ -479,13 +496,42 @@ class SeoModule extends AbstractModule
 
 	private function getFeaturedRoundupGame(array $games): ?array
 	{
-		foreach ($games as $game) {
-			if (is_array($game) && !empty($game['name'])) {
-				return $game;
+		if (!class_exists('\AutoGamesDiscountCreator\Post\DailyRoundupSnapshotRenderer')) {
+			foreach ($games as $game) {
+				if (is_array($game) && !empty($game['name'])) {
+					return $game;
+				}
 			}
+
+			return null;
 		}
 
-		return null;
+		$renderer = new \AutoGamesDiscountCreator\Post\DailyRoundupSnapshotRenderer();
+		$featured = $renderer->getFeaturedGameFromSnapshot(['games' => $games]);
+
+		return is_array($featured) ? $featured : null;
+	}
+
+	private function getLocalizedSiteDescription(string $languageCode): string
+	{
+		unset( $languageCode );
+		$this->ensureUcikiTextdomainLoaded();
+
+		return __( 'Uciki publishes daily game deals, free game alerts, and market-specific roundup posts.', 'uciki' );
+	}
+
+	private function ensureUcikiTextdomainLoaded(): void
+	{
+		if ( is_textdomain_loaded( 'uciki' ) ) {
+			return;
+		}
+
+		$locale = determine_locale();
+		if ( ! is_string( $locale ) || '' === $locale ) {
+			$locale = get_locale();
+		}
+
+		load_textdomain( 'uciki', get_template_directory() . '/languages/uciki-' . $locale . '.mo', $locale );
 	}
 
 	private function formatStoreKey(string $storeKey): string

@@ -4,6 +4,22 @@ namespace AutoGamesDiscountCreator\Post;
 
 class DailyRoundupSnapshotRenderer
 {
+	public function getFeaturedGameFromSnapshot(array $snapshot): ?array
+	{
+		$games = array_values(
+			array_filter(
+				(array) ($snapshot['games'] ?? []),
+				static fn($game): bool => is_array($game) && !empty($game['name']) && !empty($game['url'])
+			)
+		);
+
+		if ($games === []) {
+			return null;
+		}
+
+		return $this->selectFeaturedGame($games);
+	}
+
 	public function render(array $snapshot, array $copySet): string
 	{
 		$games = array_values(
@@ -32,7 +48,7 @@ class DailyRoundupSnapshotRenderer
 		$userScoreLabel = $copySet['user_score_label'] ?? 'User Score';
 		$opencriticLabel = $copySet['opencritic_score_label'] ?? 'OpenCritic';
 		$steamRatingLabel = $copySet['steam_rating_label'] ?? 'Steam Rating';
-		$featuredGame = $this->selectFeaturedGame($games);
+		$featuredGame = $this->getFeaturedGameFromSnapshot($snapshot);
 
 		$html = '<section class="agdc-roundup">';
 		$html .= '<div class="steam-content-body agdc-roundup__intro"><p>' . esc_html($intro) . '</p></div>';

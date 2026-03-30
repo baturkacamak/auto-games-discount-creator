@@ -128,11 +128,17 @@ class FreeGamesPostStrategy implements PostTypeStrategy
 
 	public function getPostSlug(): string
 	{
+		$slug = sanitize_title($this->getPostTitle());
+		if ($slug !== '') {
+			return $slug;
+		}
+
 		return sanitize_title(
 			sprintf(
-				'%s-free-game-%s',
-				$this->marketTarget['seo_path_prefix'] ?? $this->marketTarget['site_section'] ?? 'market',
-				$this->gameData['name'] ?? 'deal'
+				'%s-%s-%s',
+				$this->copySet['free_category_slug_base'] ?? 'free-game',
+				$this->gameData['name'] ?? 'deal',
+				date('Y-m-d')
 			)
 		);
 	}
