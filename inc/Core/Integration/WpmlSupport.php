@@ -24,14 +24,7 @@ class WpmlSupport
 		}
 
 		$elementType = $this->resolveElementType($postType);
-		$languageDetails = apply_filters(
-			'wpml_element_language_details',
-			null,
-			[
-				'element_id' => $postId,
-				'element_type' => $elementType,
-			]
-		);
+		$languageDetails = $this->getElementLanguageDetails($postId, $elementType);
 
 		do_action(
 			'wpml_set_element_language_details',
@@ -43,6 +36,21 @@ class WpmlSupport
 				'source_language_code' => null,
 			]
 		);
+
+		$assignedDetails = $this->getElementLanguageDetails($postId, $elementType);
+		$assignedLanguageCode = is_object($assignedDetails) && isset($assignedDetails->language_code)
+			? strtolower((string) $assignedDetails->language_code)
+			: '';
+
+		if ($assignedLanguageCode !== $resolvedLanguageCode) {
+			$this->persistElementLanguageDetails(
+				$postId,
+				$elementType,
+				is_object($languageDetails) && isset($languageDetails->trid) ? (int) $languageDetails->trid : 0,
+				$resolvedLanguageCode,
+				null
+			);
+		}
 	}
 
 	public function linkPostTranslation(int $sourcePostId, int $translatedPostId, string $postType, string $languageCode): void
@@ -57,14 +65,7 @@ class WpmlSupport
 		}
 
 		$elementType = $this->resolveElementType($postType);
-		$sourceLanguageDetails = apply_filters(
-			'wpml_element_language_details',
-			null,
-			[
-				'element_id' => $sourcePostId,
-				'element_type' => $elementType,
-			]
-		);
+		$sourceLanguageDetails = $this->getElementLanguageDetails($sourcePostId, $elementType);
 
 		$sourceTrid = is_object($sourceLanguageDetails) && isset($sourceLanguageDetails->trid)
 			? (int) $sourceLanguageDetails->trid
@@ -88,6 +89,24 @@ class WpmlSupport
 				'source_language_code' => $sourceLanguageCode,
 			]
 		);
+
+		$translatedDetails = $this->getElementLanguageDetails($translatedPostId, $elementType);
+		$translatedTrid = is_object($translatedDetails) && isset($translatedDetails->trid)
+			? (int) $translatedDetails->trid
+			: 0;
+		$translatedLanguageCode = is_object($translatedDetails) && isset($translatedDetails->language_code)
+			? strtolower((string) $translatedDetails->language_code)
+			: '';
+
+		if ($translatedTrid !== $sourceTrid || $translatedLanguageCode !== $resolvedLanguageCode) {
+			$this->persistElementLanguageDetails(
+				$translatedPostId,
+				$elementType,
+				$sourceTrid,
+				$resolvedLanguageCode,
+				$sourceLanguageCode
+			);
+		}
 	}
 
 	public function getCurrentLanguageCode(): string
@@ -247,5 +266,67 @@ class WpmlSupport
 		}
 
 		return '';
+	}
+
+	private function getElementLanguageDetails(int $elementId, string $elementType): ?object
+	{
+		$details = apply_filters(
+			'wpml_element_language_details',
+			null,
+			[
+				'element_id' => $elementId,
+				'element_type' => $elementType,
+			]
+		);
+
+		return is_object($details) ? $details : null;
+	}
+
+	private function persistElementLanguageDetails(
+		int $elementId,
+		string $elementType,
+		int $trid,
+		string $languageCode,
+		?string $sourceLanguageCode
+	): void {
+		global $wpdb;
+
+		if ($elementId <= 0 || $elementType === '' || $languageCode === '' || !isset($wpdb->prefix)) {
+			return;
+		}
+
+		$table = $wpdb->prefix . 'icl_translations';
+		$existingTranslationId = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT translation_id FROM {$table} WHERE element_id = %d AND element_type = %s LIMIT 1",
+				$elementId,
+				$elementType
+			)
+		);
+
+		if ($trid <= 0) {
+			$trid = (int) $wpdb->get_var("SELECT COALESCE(MAX(trid), 0) + 1 FROM {$table}");
+		}
+
+		$data = [
+			'element_type' => $elementType,
+			'trid' => $trid,
+			'language_code' => $languageCode,
+			'source_language_code' => $sourceLanguageCode,
+		];
+
+		if ($existingTranslationId > 0) {
+			$wpdb->update(
+				$table,
+				$data,
+				[
+					'translation_id' => $existingTranslationId,
+				]
+			);
+			return;
+		}
+
+		$data['element_id'] = $elementId;
+		$wpdb->insert($table, $data);
 	}
 }
